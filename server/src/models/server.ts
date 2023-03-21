@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
+import cors from 'cors';
 import routerProduct from '../routes/product';
 import { newUser, loginUser } from '../controllers/user';
-import sequelize from '../db/connection';
 import Product from './product';
 import User from './user';
 
@@ -39,7 +39,10 @@ class Servers {
    * 中间件express.json解析
    */
   midlewares(): void {
+    // json解析
     this.app.use(express.json());
+    // 跨域
+    this.app.use(cors());
   }
 
   /**
@@ -47,6 +50,7 @@ class Servers {
    */
   async dbConnect(): Promise<void> {
     try {
+      // 测试连接
       // await sequelize.authenticate();
       // 如果表不存在,则创建该表(如果已经存在,则不执行任何操作)
       await Product.sync();

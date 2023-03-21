@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 const product_1 = __importDefault(require("../routes/product"));
 const user_1 = require("../controllers/user");
 const product_2 = __importDefault(require("./product"));
@@ -46,6 +47,8 @@ class Servers {
      */
     midlewares() {
         this.app.use(express_1.default.json());
+        // 跨域
+        this.app.use((0, cors_1.default)());
     }
     /**
      * 数据库连接
