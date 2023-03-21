@@ -1,0 +1,8 @@
+学习笔记    2023年3月21日09:16:00
+
+启动命令
+npx nodemon dist/index.js
+node dist/index.js
+
+监听代码改变
+npx tsc --watch
