@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/user';
 import jwt from 'jsonwebtoken';
+import { encipher } from '../util/encipher';
 
 /**
  * 创建用户
@@ -12,6 +13,8 @@ const newUser = async (req: Request, res: Response) => {
   const { username, password } = req.body;
   // 加密密码
   const hashPassword = await bcrypt.hash(password, 12);
+  const aesPassword = encipher(password);
+  console.log(aesPassword);
 
   // 验证是否存在相同用户
   const userRepeat = await User.findOne({ where: { username } });
@@ -25,7 +28,7 @@ const newUser = async (req: Request, res: Response) => {
     // 成功创建用户
     await User.create({
       username,
-      password: hashPassword,
+      password: aesPassword,
     });
     res.json({
       msg: `用户 ${username} 创建成功`,
@@ -60,7 +63,10 @@ const loginUser = async (req: Request, res: Response) => {
   }
   // 验证密码是否正确
   const passwordValid = await bcrypt.compare(password, user.password);
-  if (!passwordValid) {
+  const aesPasswordValid = encipher(password);
+  console.log('aesPasswordValid', aesPasswordValid);
+
+  if (aesPasswordValid !== user.password) {
     return res.status(400).json({
       msg: `密码错误`,
     });

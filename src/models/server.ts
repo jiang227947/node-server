@@ -4,6 +4,7 @@ import routerProduct from '../routes/product';
 import { newUser, loginUser } from '../controllers/user';
 import Product from './product';
 import User from './user';
+import { download, upload } from '../controllers/file';
 
 class Servers {
   private app: Application;
@@ -33,6 +34,8 @@ class Servers {
     this.app.use('/api/products', routerProduct);
     this.app.use('/api/users', newUser);
     this.app.use('/api/loginUser', loginUser);
+    this.app.use('/api/uploadFile', upload.body);
+    this.app.use('/api/downloadFile', download);
   }
 
   /**
@@ -54,10 +57,9 @@ class Servers {
       // await sequelize.authenticate();
       // 如果表不存在,则创建该表(如果已经存在,则不执行任何操作)
       await Product.sync();
-      await User.sync({ alter: true });
-      console.log('数据库创建成功');
+      await User.sync();
     } catch (error) {
-      console.log('数据库创建失败', error);
+      console.log('数据库连接失败', error);
     }
   }
 }
