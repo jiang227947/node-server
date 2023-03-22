@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { getProducts } from '../controllers/product';
 import validateToken from './validate-token';
 
-const router = Router();
+const ProductRouter = Router();
 
-router.get('/', getProducts);
+ProductRouter.get('/api/products', getProducts);
 
-export default router;
+export default ProductRouter;

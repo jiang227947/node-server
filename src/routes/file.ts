@@ -1,9 +1,10 @@
-import { Router } from 'express';
-import { download, upload } from '../controllers/file';
+import {Router} from 'express';
+import {download, upload, uploadMulter} from '../controllers/file';
 
-const router = Router();
-
-router.post('/', upload.handler, upload.body);
-router.post('/', download);
-
-export default router;
+const FileOperation = Router();
+/**
+ * 路由对象上挂载路由
+ */
+FileOperation.post('/api/uploadFile', uploadMulter.single('file'), upload);
+FileOperation.post('/api/download', download);
+export default FileOperation;
