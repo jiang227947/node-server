@@ -7,7 +7,9 @@ import ProductRouter from '../routes/product';
 import FileOperation from '../routes/file';
 import Filedb from './file';
 import { SocketServer } from './socket';
-import SocketRouter from '../routes/chat';
+import LeaveMessage from './leave-message';
+import LeaveMessageRouter from '../routes/leave-message';
+import ChatMessageSendRouter from '../routes/chat';
 
 class Servers {
   private app: Application;
@@ -48,9 +50,14 @@ class Servers {
    */
   routes(): void {
     this.app.use(ProductRouter);
+    // 用户路由
     this.app.use(UserRouter);
+    // 文件路由
     this.app.use(FileOperation);
-    this.app.use(SocketRouter);
+    // 留言路由
+    this.app.use(LeaveMessageRouter);
+    // socket路由
+    this.app.use(ChatMessageSendRouter);
   }
 
   /**
@@ -72,8 +79,12 @@ class Servers {
       // await sequelize.authenticate();
       // 如果表不存在,则创建该表(如果已经存在,则不执行任何操作)
       await Product.sync();
+      // 用户表
       await User.sync();
+      // 文件路径表
       await Filedb.sync();
+      // 登录页留言框表
+      await LeaveMessage.sync();
     } catch (error) {
       console.log('数据库连接失败', error);
     }

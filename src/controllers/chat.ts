@@ -15,7 +15,6 @@ const ChatMessageSend = (req: Request, res: Response) => {
       msg: `消息为空`,
     });
   }
-  console.log(io);
   // 发送给所有人
   io.emit('chat_message', { user, message });
   // 发送给单个用户

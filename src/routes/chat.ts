@@ -5,4 +5,4 @@ const ChatMessageSendRouter = Router();
 
 ChatMessageSendRouter.post('/api/sendMsg', SocketRouter);
 
-export default SocketRouter;
+export default ChatMessageSendRouter;
