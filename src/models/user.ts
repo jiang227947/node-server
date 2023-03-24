@@ -13,14 +13,31 @@ const User = sequelize.define('user', {
     // 自动递增
     autoIncrement: true,
   },
+  // 登录名
   username: {
     type: DataTypes.STRING,
     unique: true,
     allowNull: false,
   },
+  // 用户名
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  role: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  roleName: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  lastLoginTime: {
+    type: DataTypes.BIGINT
   },
 });
 

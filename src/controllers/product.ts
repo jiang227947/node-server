@@ -8,5 +8,9 @@ import Product from '../models/product';
  */
 export const getProducts = async (req: Request, res: Response) => {
   const listProducts = await Product.findAll();
-  res.json(listProducts);
+  res.status(200).json({
+    code: 200,
+    msg: '查询成功',
+    data: listProducts
+  });
 };
