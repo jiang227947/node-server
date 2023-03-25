@@ -1,3 +1,5 @@
 # node-server
-包含了Node、JWT、sequelize、MYSQL示例
-后续逐步替换我自己项目Java所编写的后端
+## 包含`Node、Ts、JWT、sequelize、mysql`
+
+### `2023/3/25` Node服务替代Java服务上线
+### [Angular前端项目](https://github.com/jiang227947/ziyi-project)的后端Node服务
