@@ -18,6 +18,10 @@ const Filedb = sequelize.define('file', {
     unique: true,
     allowNull: false,
   },
+  filesize: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
   path: {
     type: DataTypes.STRING,
     unique: true,

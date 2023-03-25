@@ -11,8 +11,9 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
     if (headerToken !== undefined && headerToken.startsWith('Bearer ')) {
         // 截取token
         const bearerToken = headerToken.slice(7);
+        //aes解密
         const aesToken = decipher(bearerToken);
-        console.log('aesToken', aesToken);
+        // console.log('aesToken', aesToken);
         try {
             // 验证token合法性
             jwt.verify(aesToken, process.env.SECRET_KEY || 'jzy2023');

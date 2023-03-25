@@ -1,9 +1,9 @@
 import {Request, Response} from 'express';
-import bcrypt from 'bcrypt';
 import User from '../models/user';
 import jwt from 'jsonwebtoken';
 import {encipher} from '../util/encipher';
 import {ResultListPage} from "../models/class/ResultList";
+import {Token} from "../models/class/token";
 
 /**
  * 创建用户
@@ -13,9 +13,8 @@ import {ResultListPage} from "../models/class/ResultList";
 const newUser = async (req: Request, res: Response) => {
     const {name, username, password, role, roleName} = req.body;
     // 加密密码
-    const hashPassword = await bcrypt.hash(password, 12);
+    // const hashPassword = await bcrypt.hash(password, 12);
     const aesPassword = encipher(password);
-    console.log(aesPassword);
 
     // 验证是否存在相同用户
     const userRepeat = await User.findOne({where: {name}});
@@ -83,21 +82,23 @@ const loginUser = async (req: Request, res: Response) => {
         process.env.SECRET_KEY || 'jzy2023',
         // 过期时间 默认6小时
         {
-            expiresIn: '21600000',
+            expiresIn: 21600000,
         }
     );
     // 加密jwt
     const aesToken = encipher(token);
+    const tokenInfo = new Token('authorization', aesToken, user.id, 21600000);
     res.status(200).json({
         code: 200,
         msg: '登录成功',
         data: {
+            id: user.id,    // id
             userName: user.username,    // 登录名
             name: user.name,    // 昵称
             role: user.role, // 密码
             roleName: user.roleName,    // 角色
             lastLoginTime: user.lastLoginTime,    // 角色名称
-            token: aesToken
+            token: tokenInfo
         }
     });
     // 更新登录时间
@@ -105,7 +106,7 @@ const loginUser = async (req: Request, res: Response) => {
         {
             lastLoginTime: new Date().getTime()
         }, {
-            where: {name: user.name}
+            where: {id: user.id}
         });
 };
 
@@ -120,11 +121,12 @@ const allUser = async (req: Request, res: Response) => {
     // 查询所有用户的数量
     const userCount = await User.count();
     let totalPage: number;
+
     // 获取总分页数量
-    if (pageSize == 0) {
+    if (pageSize === 0) {
         totalPage = 0;
     } else {
-        totalPage = +((userCount + pageSize - 1) / pageSize).toFixed(0);
+        totalPage = Math.trunc(userCount % pageSize === 0 ? userCount / pageSize : userCount / pageSize + 1);
     }
     // 跳过offset个实例,然后获取limit个实例
     const allUserList = await User.findAll({offset: begin, limit: pageSize}).then((users) => {
@@ -132,7 +134,7 @@ const allUser = async (req: Request, res: Response) => {
             return {
                 id: item.id,
                 name: item.name,
-                userName: item.userName,
+                userName: item.username,
                 role: item.role,
                 roleName: item.roleName,
                 lastLoginTime: item.lastLoginTime
