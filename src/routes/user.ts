@@ -1,5 +1,13 @@
 import {Router} from 'express';
-import {newUser, loginUser, allUser, deleteUser} from '../controllers/user';
+import {
+    newUser,
+    loginUser,
+    allUser,
+    deleteUser,
+    updateUser,
+    uploadAvatar,
+    uploadAvatarMulter
+} from '../controllers/user';
 import validateToken from "./validate-token";
 
 const UserRouter = Router();
@@ -12,5 +20,9 @@ UserRouter.post('/api/login', loginUser);
 UserRouter.post('/api/getUserList', validateToken, allUser);
 // 删除用户
 UserRouter.post('/api/deleteUser', validateToken, deleteUser);
+// 修改用户
+UserRouter.post('/api/updateUser', validateToken, updateUser);
+// 上传头像
+UserRouter.post('/api/uploadAvatar', validateToken, uploadAvatarMulter.single('avatar'), uploadAvatar);
 
 export default UserRouter;

@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import {encipher} from '../util/encipher';
 import {ResultListPage} from "../models/class/ResultList";
 import {Token} from "../models/class/token";
+import Filedb from "../models/file";
+import multer from "multer";
+import fs from "fs";
 
 /**
  * 创建用户
@@ -95,10 +98,12 @@ const loginUser = async (req: Request, res: Response) => {
             id: user.id,    // id
             userName: user.username,    // 登录名
             name: user.name,    // 昵称
-            role: user.role, // 密码
-            roleName: user.roleName,    // 角色
-            lastLoginTime: user.lastLoginTime,    // 角色名称
-            token: tokenInfo
+            remarks: user.remarks,    // 备注
+            avatar: user.avatar,    // 头像
+            role: user.role, // 角色
+            roleName: user.roleName,    // 角色名称
+            lastLoginTime: user.lastLoginTime,    // 最后登录时间
+            token: tokenInfo // token
         }
     });
     // 更新登录时间
@@ -183,4 +188,107 @@ const deleteUser = async (req: Request, res: Response) => {
         });
     }
 };
-export {newUser, loginUser, allUser, deleteUser};
+
+/**
+ * 上传头像
+ * @param req
+ * @param res
+ */
+const path = '/data/avatar';
+const storage = multer.diskStorage({
+    // 文件上传的地址
+    destination: (req, file, callback) => {
+        //判断目录是否存在，没有则创建
+        if (!fs.existsSync(path)) {
+            fs.mkdirSync(path, {
+                recursive: true,
+            });
+        }
+        callback(null, path);
+    },
+    // 文件名称
+    filename: (req, file, callback) => {
+        file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        callback(null, file.originalname);
+    },
+});
+// multer配置项
+const uploadAvatarMulter = multer({storage: storage});
+const uploadAvatar = async (req: Request, res: Response) => {
+    if (req.file) {
+        const {id} = req.body;
+        const user: any = await User.findOne({where: {id}});
+        // 判断是否存在头像
+        // console.log(fs.existsSync(user.avatar));
+        if (user.avatar && fs.existsSync(user.avatar)) {
+            fs.unlinkSync(user.avatar); // 删除旧头像
+        }
+        const pathUrl = `${req.file?.destination}/${req.file?.originalname}`; // 指定文件路径和文件名
+        // console.log(pathUrl);
+        // console.log(path + req.file?.originalname);
+        // 保存新头像
+        await user.update(
+            {
+                avatar: `${path}/${req.file?.originalname}`
+            }, {
+                where: {id: user.id}
+            });
+        res.json({
+            code: 200,
+            msg: `上传成功`,
+            url: pathUrl, // 复制URL链接直接浏览器可以访问
+        });
+    } else {
+        res.status(400).json({
+            code: -1,
+            msg: `上传失败`,
+        });
+    }
+};
+
+/**
+ * 修改用户信息
+ * @param req 参数
+ * @param res 返回
+ */
+const updateUser = async (req: Request, res: Response) => {
+    const {id, avatar, userName, remarks, password} = req.body;
+    if (!id) {
+        return res.json({
+            code: -1,
+            msg: '参数错误'
+        });
+    }
+    const user: any = await User.findOne({where: {id}});
+    if (!user) {
+        return res.json({
+            code: -1,
+            msg: `用户不存在`,
+            user
+        });
+    }
+    const userId = req.header('userId');
+    if (userId != user.id) {
+        return res.json({
+            code: -1,
+            msg: `参数异常`,
+            user
+        });
+    }
+    const aesPassword = encipher(password);
+    // 更新登录时间
+    await user.update(
+        {
+            avatar, // 头像
+            remarks, // 备注
+            username: userName, // 昵称
+            password: aesPassword, // 密码
+        }, {
+            where: {id: user.id}
+        });
+    res.json({
+        code: 200,
+        msg: '修改成功'
+    });
+}
+export {newUser, loginUser, allUser, deleteUser, updateUser, uploadAvatarMulter, uploadAvatar};

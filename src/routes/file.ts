@@ -7,7 +7,7 @@ const FileOperation = Router();
  * 路由对象上挂载路由
  */
 FileOperation.post('/api/queryFileList', validateToken, allFiles);
-FileOperation.post('/api/uploadFile', uploadMulter.single('file'), validateToken, upload);
+FileOperation.post('/api/uploadFile', validateToken, uploadMulter.single('file'), upload);
 FileOperation.post('/api/download', validateToken, download);
 FileOperation.post('/api/deleteFile', validateToken, deleteFile);
 export default FileOperation;
