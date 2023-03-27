@@ -13,8 +13,8 @@ import ChatMessageSendRouter from '../routes/chat';
 
 class Servers {
     private app: Application;
-    private port: string;
-    private socketPort: string;
+    private readonly port: string;
+    private readonly socketPort: string;
 
     constructor() {
         this.app = express();
@@ -29,7 +29,7 @@ class Servers {
         // 添加路由接口
         this.routes();
         // 创建数据库
-        this.dbConnect();
+        this.dbConnect().then();
     }
 
     /**
@@ -69,6 +69,8 @@ class Servers {
         this.app.use(express.json());
         // 跨域
         this.app.use(cors());
+        // 头像文件静态资源托管
+        this.app.use('/data/avatar', express.static('/data/avatar'));
     }
 
     /**
