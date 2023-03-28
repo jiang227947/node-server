@@ -22,6 +22,10 @@ const Filedb = sequelize.define('file', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  downloadCount: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   path: {
     type: DataTypes.STRING,
     unique: true,

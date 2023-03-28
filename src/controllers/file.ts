@@ -130,6 +130,13 @@ const download = async (req: Request, res: Response) => {
             msg: `文件不存在`,
         });
     }
+    // 更新登录时间
+    await file.update(
+        {
+            downloadCount: file.downloadCount + 1
+        }, {
+            where: {id: file.id}
+        });
     res.download(file.path);
 };
 
