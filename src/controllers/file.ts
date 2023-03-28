@@ -2,7 +2,7 @@ import {Request, Response} from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import Filedb from '../models/file';
-import {ResultListPage} from "../models/class/ResultList";
+import {ResultListPage} from '../models/class/ResultList';
 
 
 /**
@@ -65,7 +65,7 @@ const storage = multer.diskStorage({
 });
 // multer配置项
 const uploadMulter = multer({storage: storage});
-const upload = async (req: Request, res: Response) => {
+const upload = async (req: Request | any, res: Response) => {
     // multer将请求中的文件存储之后，会把文件的信息(包括文件存储时的文件名)放入req.file对象中。(如果用的是upload.array，则会放在req.files中)
     // multer还会把本次表单提交的文本字段(如果有)解析为对象存入req.body中
     // console.log('单个文件：', req.file);
