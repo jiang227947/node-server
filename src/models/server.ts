@@ -73,7 +73,11 @@ class Servers {
     this.app.use(
       cors({
         origin: (origin, callback) => {
-          if (whiteList.indexOf(<string>origin) !== -1) return callback(null, true);
+          if (origin) {
+            if (whiteList.indexOf(<string>origin) !== -1) return callback(null, true);
+          } else {
+            return callback(null, true);
+          }
           callback(new Error('Not allowed by CORS!'));
         },
       })
