@@ -19,6 +19,10 @@ const visitor = async (req: Request, res: Response) => {
                 where: {id: visitorUser.id},
             }
         );
+        res.status(200).json({
+            code: 0,
+            msg: `请求成功`,
+        });
     } else {
         try {
             const accessTime = new Date().getTime();
