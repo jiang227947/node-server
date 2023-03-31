@@ -10,6 +10,7 @@ import { SocketServer } from './socket';
 import LeaveMessage from './leave-message';
 import LeaveMessageRouter from '../routes/leave-message';
 import ChatMessageSendRouter from '../routes/chat';
+import Visitor from './visitor';
 
 class Servers {
   private app: Application;
@@ -101,6 +102,8 @@ class Servers {
       await Filedb.sync();
       // 登录页留言框表
       await LeaveMessage.sync();
+      // 访问表
+      await Visitor.sync();
     } catch (error) {
       console.log('数据库连接失败', error);
     }

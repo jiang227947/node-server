@@ -130,7 +130,7 @@ const download = async (req: Request, res: Response) => {
             msg: `文件不存在`,
         });
     }
-    // 更新登录时间
+    // 更新下载次数
     await file.update(
         {
             downloadCount: file.downloadCount + 1
