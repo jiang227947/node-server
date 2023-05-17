@@ -6,6 +6,7 @@ import {ResultListPage} from '../models/class/ResultList';
 import {Token} from '../models/class/token';
 import multer from 'multer';
 import fs from 'fs';
+import {Json} from 'sequelize/types/utils';
 
 /**
  * 创建用户
@@ -71,7 +72,6 @@ const loginUser = async (req: Request, res: Response) => {
     // 验证密码是否正确
     // const passwordValid = await bcrypt.compare(password, user.password);
     const aesPasswordValid = encipher(password);
-
     if (aesPasswordValid !== user.password) {
         return res.json({
             code: -1,
@@ -82,7 +82,7 @@ const loginUser = async (req: Request, res: Response) => {
     const token = jwt.sign(
         {name: username},
         // 密钥
-        process.env.SECRET_KEY || 'jzy2023',
+        process.env.SECRET_KEY || 'uC+0Nnljo9',
         // 过期时间 默认6小时
         {
             expiresIn: 21600000,
@@ -148,7 +148,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
         client_secret: process.env.CLIENT_SECRET,
         code: req.query.code,
     };
-    const opts = {headers: {accept: 'application/json'}};
+    const opts = {headers: {accept: 'application/json'}, timeout: 60000};
     /**
      * 获取access_token
      * 接下来的操作都需要使用access_token
@@ -156,9 +156,9 @@ const githubAccessToken = async (req: Request, res: Response) => {
     const response = await axios.post(
         `https://github.com/login/oauth/access_token`,
         body,
-        opts
+        opts,
     );
-    console.log(response.data);
+    console.log('response.data', response.data);
     // 将access_token保存到变量中
     const token = await response.data['access_token'];
     const userInfo = await axios.get(`https://api.github.com/user`, {
@@ -166,9 +166,10 @@ const githubAccessToken = async (req: Request, res: Response) => {
         headers: {
             // 在请求头中添加 Authorization 字段
             Authorization: `token ${token}`,
-        }
+        },
+        timeout: 60000
     });
-    console.log(userInfo.data);
+    console.log('userInfo', userInfo.data);
     /**
      * 根据access_token获取用户邮箱信息
      */
@@ -177,29 +178,93 @@ const githubAccessToken = async (req: Request, res: Response) => {
         headers: {
             Accept: 'application/vnd.github+json',
             Authorization: `token ${token}`,
-        }
-    });
-    console.log(emailInfo.data);
-    // TODO: 将用户信息和邮箱信息保存到数据库中
-    // 验证成功，跳转到首页
-    res.redirect(`/main/index?login_type=github_oauth`);
-    // 返回结构
-    res.status(200).json({
-        code: 200,
-        msg: '登录成功',
-        data: {
-            // id: user.id, // id
-            // userName: user.username, // 登录名
-            // remarks: user.remarks, // 备注
-            // role: user.role, // 角色
-            // roleName: user.roleName, // 角色名称
-            // lastLoginTime: user.lastLoginTime, // 最后登录时间
-            // token: tokenInfo, // token
-            email: emailInfo.data[0].email,
-            name: userInfo.data.name,
-            avatar: userInfo.data.avatar_url,
         },
+        timeout: 60000
     });
+    console.log('emailInfo', emailInfo.data);
+    // 查询是否存在该用户
+    const user: any = await User.findOne({where: {id: userInfo.data.id}});
+    if (!user) {
+        // TODO: 将用户信息和邮箱信息保存到数据库中
+        try {
+            // 成功创建用户
+            await User.create({
+                id: userInfo.data.id,
+                name: userInfo.data.name,
+                username: userInfo.data.name,
+                avatar: userInfo.data.avatar, // 头像
+                remarks: emailInfo.data[0].email, // 备注
+                password: 0,
+                role: 2001,
+                roleName: 'Github用户'
+            });
+            // 生成token令牌 登录成功
+            const token = jwt.sign(
+                {name: userInfo.data.name},
+                // 密钥
+                process.env.SECRET_KEY || 'uC+0Nnljo9',
+                // 过期时间 默认6小时
+                {
+                    expiresIn: 21600000,
+                }
+            );
+            // 加密jwt
+            const aesToken: string = encipher(token);
+            const tokenInfo: Token = new Token('authorization', aesToken, userInfo.data.id, 21600000);
+            const callbackParams = {
+                login_type: 'github_oauth',
+                id: userInfo.data.id,
+                name: userInfo.data.name,
+                avatar: userInfo.data.avatar_url,
+                userName: userInfo.data.login, // 登录名
+                remarks: emailInfo.data[0].email, // 备注
+                role: 2001, // 角色
+                roleName: 'Github用户', // 角色名称
+                token: tokenInfo, // token
+            }
+            // 跳转到首页
+            res.redirect(`/login/auth?${JSON.stringify(callbackParams)}`);
+        } catch (error) {
+            // 用户创建失败
+        }
+    } else {
+        // 更新登录时间
+        await user.update(
+            {
+                lastLoginTime: new Date().getTime(),
+            },
+            {
+                where: {id: user.id},
+            }
+        );
+        // 生成token令牌 登录成功
+        const token = jwt.sign(
+            {name: user.name},
+            // 密钥
+            process.env.SECRET_KEY || 'uC+0Nnljo9',
+            // 过期时间 默认6小时
+            {
+                expiresIn: 21600000,
+            }
+        );
+        // 加密jwt
+        const aesToken: string = encipher(token);
+        const tokenInfo: Token = new Token('authorization', aesToken, user.id, 21600000);
+        const callbackParams = {
+            login_type: 'github_oauth',
+            id: user.id,
+            name: user.name,
+            avatar: user.avatar,
+            userName: user.username, // 登录名
+            remarks: user.remarks, // 备注
+            role: user.role, // 角色
+            roleName: user.roleName, // 角色名称
+            lastLoginTime: user.lastLoginTime, // 最后登录时间
+            token: tokenInfo, // token
+        }
+        // 验证成功，跳转到首页
+        res.redirect(`/login/auth?${JSON.stringify(callbackParams)}`);
+    }
 };
 
 /**

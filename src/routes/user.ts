@@ -21,7 +21,7 @@ UserRouter.post('/api/login', loginUser);
 // github获取授权
 UserRouter.get('/api/githubLogin', githubOauth);
 // github获取鉴权
-UserRouter.post('/api/githubAccessToken', githubAccessToken);
+UserRouter.get('/api/auth-callback', githubAccessToken);
 // 查询所有用户
 UserRouter.post('/api/getUserList', validateToken, allUser);
 // 删除用户
