@@ -2,13 +2,15 @@ import {Router} from 'express';
 import {
     newUser,
     loginUser,
+    githubOauth,
+    githubAccessToken,
     allUser,
     deleteUser,
     updateUser,
     uploadAvatar,
     uploadAvatarMulter
 } from '../controllers/user';
-import validateToken from "./validate-token";
+import validateToken from './validate-token';
 
 const UserRouter = Router();
 
@@ -16,6 +18,10 @@ const UserRouter = Router();
 UserRouter.post('/api/register', newUser);
 // 登录
 UserRouter.post('/api/login', loginUser);
+// github获取授权
+UserRouter.get('/api/githubLogin', githubOauth);
+// github获取鉴权
+UserRouter.post('/api/githubAccessToken', githubAccessToken);
 // 查询所有用户
 UserRouter.post('/api/getUserList', validateToken, allUser);
 // 删除用户

@@ -1,7 +1,7 @@
 import CryptoJS from 'crypto-js';
 
-const key = CryptoJS.enc.Utf8.parse(process.env.AES_KEY || 'jiangziyiaeskeys'); // 16位
-const iv = CryptoJS.enc.Utf8.parse(process.env.AES_IV || 'abcdefghijklmnop');
+const key = CryptoJS.enc.Utf8.parse(process.env.AES_KEY); // 16位
+const iv = CryptoJS.enc.Utf8.parse(process.env.AES_IV);
 const dataConst = {
     iv,
     mode: CryptoJS.mode.CBC,
