@@ -24,8 +24,5 @@ nodemon dist/index.js
 # 监听热加载
 tsc --watch
 ```
-3.已知BUG
-
-- 因服务器原因，Github登录时axios请求token大概率失败。
 
 
