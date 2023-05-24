@@ -6,4 +6,6 @@ export enum UserRoleEnum {
     admin = '1001',
     // 普通用户
     general = '1002',
+    // github用户
+    github = '2001',
 }

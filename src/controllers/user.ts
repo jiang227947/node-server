@@ -1,13 +1,17 @@
 import {Request, Response} from 'express';
 import User from '../models/user';
 import jwt from 'jsonwebtoken';
-import {decipher, encipher} from '../util/encipher';
+import {encipher} from '../util/encipher';
 import {ResultListPage} from '../models/class/ResultList';
 import {Token} from '../models/class/token';
 import multer from 'multer';
 import fs from 'fs';
-import {Json} from 'sequelize/types/utils';
-import {OauthInterface} from '../interface/user';
+import {
+    GithubAccessTokenResponse, GithubUserInterface,
+    OauthInterface
+} from '../interface/user';
+import {AxiosResponse} from 'axios';
+import {UserRoleEnum} from '../enum/user.enum';
 
 /**
  * 创建用户
@@ -81,7 +85,7 @@ const loginUser = async (req: Request, res: Response) => {
     }
     // 生成token令牌 登录成功
     const token = jwt.sign(
-        {name: username},
+        {name: username, id: user.id},
         // 密钥
         process.env.SECRET_KEY || 'uC+0Nnljo9',
         // 过期时间 默认6小时
@@ -147,8 +151,8 @@ const githubAccessToken = async (req: Request, res: Response) => {
     axios.defaults.timeout = 30000;
     try {
         let access_token = '';
-        let userInfo;
-        let userEmails;
+        let userInfo: AxiosResponse<GithubUserInterface>;
+        let userEmails: AxiosResponse<any>;
         new Promise((resolve) => {
             /**
              * 获取access_token
@@ -162,7 +166,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
             const opts = {headers: {accept: 'application/json'}};
             axios.post(
                 `https://github.com/login/oauth/access_token`, body, opts,
-            ).then(res => {
+            ).then((res: AxiosResponse<GithubAccessTokenResponse>) => {
                 access_token = res.data.access_token;
                 // console.log('access_token', access_token);
                 resolve(res);
@@ -181,7 +185,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
                         // 在请求头中添加 Authorization 字段
                         Authorization: `token ${access_token}`,
                     }
-                }).then(res => {
+                }).then((res: AxiosResponse<GithubUserInterface>) => {
                     userInfo = res;
                     // console.log('userInfo', userInfo.data);
                     resolve(res.data);
@@ -201,7 +205,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
                         Accept: 'application/vnd.github+json',
                         Authorization: `token ${access_token}`,
                     }
-                }).then(res => {
+                }).then((res: AxiosResponse<any>) => {
                     userEmails = res;
                     // console.log('userEmails', userEmails.data);
                     resolve(res.data);
@@ -223,12 +227,12 @@ const githubAccessToken = async (req: Request, res: Response) => {
                         avatar: userInfo.data.avatar_url, // 头像
                         remarks: userEmails.data[0].email, // 备注
                         password: 0,
-                        role: 2001,
+                        role: UserRoleEnum.github,
                         roleName: 'Github用户'
                     });
                     // 生成token令牌
                     const token = jwt.sign(
-                        {name: userInfo.data.name},
+                        {name: userInfo.data.name, id: userInfo.data.id},
                         // 密钥
                         process.env.SECRET_KEY || 'uC+0Nnljo9',
                         // 过期时间 默认6小时
@@ -249,7 +253,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
                             name: userInfo.data.login, // 昵称
                             remarks: userEmails.data[0].email, // 备注
                             avatar: userInfo.data.avatar_url, // 头像
-                            role: 2001, // 角色
+                            role: UserRoleEnum.github, // 角色
                             roleName: 'Github用户', // 角色名称
                             token: tokenInfo
                         }
@@ -273,7 +277,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
                 );
                 // 生成token令牌
                 const token = jwt.sign(
-                    {name: user.name},
+                    {name: user.name, id: user.id},
                     // 密钥
                     process.env.SECRET_KEY || 'uC+0Nnljo9',
                     // 过期时间 默认6小时
