@@ -1,9 +1,10 @@
+/**
+ * 用户路由
+ */
 import {Router} from 'express';
 import {
     newUser,
     loginUser,
-    githubOauth,
-    githubAccessToken,
     allUser,
     deleteUser,
     updateUser,
@@ -18,10 +19,6 @@ const UserRouter = Router();
 UserRouter.post('/api/register', newUser);
 // 登录
 UserRouter.post('/api/login', loginUser);
-// github获取授权
-UserRouter.get('/api/githubLogin', githubOauth);
-// github获取鉴权
-UserRouter.get('/api/auth-callback', githubAccessToken);
 // 查询所有用户
 UserRouter.post('/api/getUserList', validateToken, allUser);
 // 删除用户

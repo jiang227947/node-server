@@ -11,6 +11,7 @@ import LeaveMessage from './leave-message';
 import LeaveMessageRouter from '../routes/leave-message';
 import ChatMessageSendRouter from '../routes/chat';
 import Visitor from './visitor';
+import Oauth2Router from "../routes/oauth2";
 
 class Servers {
   private app: Application;
@@ -54,6 +55,8 @@ class Servers {
     this.app.use(ProductRouter);
     // 用户路由
     this.app.use(UserRouter);
+    // 第三方登录路由
+    this.app.use(Oauth2Router);
     // 文件路由
     this.app.use(FileOperation);
     // 留言路由
