@@ -1,7 +1,7 @@
 /**
  * 第三方登录路由
  */
-import {githubAccessToken, githubOauth, qqAccessToken, uuidState} from "../controllers/oauth2";
+import {githubAccessToken, githubOauth, qqOauth, uuidState} from "../controllers/oauth2";
 import {Router} from "express";
 
 const Oauth2Router = Router();
@@ -11,7 +11,7 @@ Oauth2Router.get('/api/gitUuidState', uuidState);
 Oauth2Router.get('/api/githubLogin', githubOauth);
 // github获取鉴权
 Oauth2Router.get('/api/auth-callback', githubAccessToken);
-// qq获取鉴权
-Oauth2Router.get('/api/qqAuth-callback', qqAccessToken);
+// qq获取鉴权code
+Oauth2Router.get('/api/qqAuth-callback', qqOauth);
 
 export default Oauth2Router;

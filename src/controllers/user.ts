@@ -6,12 +6,6 @@ import {ResultListPage} from '../models/class/ResultList';
 import {Token} from '../models/class/token';
 import multer from 'multer';
 import fs from 'fs';
-import {
-    GithubAccessTokenResponse, GithubUserInterface,
-    OauthInterface
-} from '../interface/user';
-import {AxiosResponse} from 'axios';
-import {UserRoleEnum} from '../enum/user.enum';
 
 /**
  * 创建用户
