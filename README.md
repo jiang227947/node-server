@@ -11,6 +11,7 @@
 
 - 数据库（Mysql）连接：[sequelize](https://www.sequelize.cn/core-concepts/getting-started/)
 - Token鉴权：[JWT](https://jwt.io/)
+- 长连接：[Socket.IO](https://socket.io/)
 
 1.安装依赖
 ```shell
