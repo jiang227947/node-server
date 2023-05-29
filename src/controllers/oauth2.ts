@@ -351,6 +351,7 @@ const qqOauth = async (req: Request, res: Response) => {
                         roleName: 'QQ用户'
                     });
                     const newUser: any = await User.findOne({where: {name: userInfo.nickname}});
+                    console.log('newUser', newUser);
                     // 生成token令牌
                     const token = jwt.sign(
                         {name: userInfo.nickname, id: newUser.id},
@@ -363,14 +364,14 @@ const qqOauth = async (req: Request, res: Response) => {
                     );
                     // 加密jwt
                     const aesToken: string = encipher(token);
-                    const tokenInfo: Token = new Token('authorization', aesToken, openID.openid, 360000000);
+                    const tokenInfo: Token = new Token('authorization', aesToken, newUser.id, 360000000);
                     // 加密
                     const params: OauthInterface = {
                         login_type: 'qq_oauth',
                         state: state,
                         date: new Date().getTime(),
                         userInfo: {
-                            id: +openID.openid,
+                            id: newUser.id,
                             userName: userInfo.nickname, // 登录名
                             name: userInfo.nickname, // 昵称
                             remarks: 'QQ用户', // 备注
@@ -412,7 +413,7 @@ const qqOauth = async (req: Request, res: Response) => {
                 const tokenInfo: Token = new Token('authorization', aesToken, user.id, 360000000);
                 // 加密
                 const params: OauthInterface = {
-                    login_type: 'github_oauth',
+                    login_type: 'qq_oauth',
                     state: state,
                     date: new Date().getTime(),
                     userInfo: {
