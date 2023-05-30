@@ -2,8 +2,8 @@
  * 聊天频道消息类型
  */
 export enum ChatChannelsMessageTypeEnum {
-    // 一般消息
-    generalMessage = 'generalMessage',
+    // 公共频道消息
+    publicMessage = 'publicMessage',
     // 房间消息
     roomMessage = 'roomMessage',
     // 全体消息
@@ -22,3 +22,27 @@ export enum ChatChannelsCallbackEnum {
     error = 'error'
 }
 
+
+/**
+ * 消息类型枚举
+ */
+export enum ChatMessagesTypeEnum {
+    // 一般消息
+    general = 0,
+    // 连续消息
+    continuous = 1,
+    // 系统消息
+    system = 2
+}
+
+/**
+ * 系统消息类型枚举
+ */
+export enum SystemMessagesEnum {
+    // 房间信息
+    roomInfo = 'roomInfo',
+    // 用户加入
+    join = 'userJoin',
+    // 用户离开
+    left = 'userlLeft'
+}

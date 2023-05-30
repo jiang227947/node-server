@@ -5,7 +5,7 @@ import {ChatChannelRoomInterface} from '../../interface/chat-channels';
 import {v4 as uuidv4} from 'uuid';
 
 // 每个房间允许的最大人数
-const ROOM_MAX_CAPACITY = 3;
+const ROOM_MAX_CAPACITY = 10;
 
 export class ChatChannelRoom {
     // 用于保存有关创建的每个房间 ID 和该房间中的用户数量的信息
@@ -19,10 +19,10 @@ export class ChatChannelRoom {
      * 添加房间
      * @param roomName 房间名
      * @param id 用户id
-     * @param name 用户名
+     * @param userName 用户名
      * @param socketId 用户socketId
      */
-    joinRoom(roomName: string, id: number, name: string, socketId: string): Promise<ChatChannelRoomInterface> {
+    joinRoom(roomName: string, id: number, userName: string, socketId: string): Promise<ChatChannelRoomInterface> {
         return new Promise((resolve) => {
             for (let i = 0; i < this.roomsState.length; i++) {
                 // 判断该用户是否已经在房间内
@@ -35,19 +35,20 @@ export class ChatChannelRoom {
                 } else {
                     // 新加入没满的房间
                     if (this.roomsState[i].users.length < ROOM_MAX_CAPACITY) {
-                        this.roomsState[i].users.push({id, socketId, name});
+                        this.roomsState[i].users.push({id, socketId, userName});
                         // 返回加入的房间
                         return resolve(this.roomsState[i]);
                     }
                 }
             }
             // 新增房间
-            const roomId = uuidv4();
-            console.log('新增房间', {id, name});
+            // const roomId = uuidv4();
+            const roomId: string = '8808';
+            console.log('新增房间', {id, userName});
             const room = {
                 roomId,
                 roomName: `${roomName}${this.roomsState.length + 1}`,
-                users: [{id, socketId, name}],
+                users: [{id, socketId, userName}],
             };
             // 加入房间
             this.roomsState.push(room);
@@ -61,7 +62,7 @@ export class ChatChannelRoom {
      */
     leaveRoom(roomID: string, userId: number): void {
         this.roomsState = this.roomsState.filter((room: ChatChannelRoomInterface) => {
-            if (room.roomId === roomID) {
+            if (+room.roomId === +roomID) {
                 // 查询用户下标
                 const findIndex = room.users.findIndex(user => user.id === userId);
                 console.log('findIndex', findIndex);

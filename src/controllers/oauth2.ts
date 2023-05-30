@@ -188,7 +188,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
                 );
                 // 生成token令牌
                 const token = jwt.sign(
-                    {name: user.name, id: user.id},
+                    {name: user.username, id: user.id},
                     // 密钥
                     process.env.SECRET_KEY || 'uC+0Nnljo9',
                     // 过期时间 默认6小时
@@ -399,7 +399,7 @@ const qqOauth = async (req: Request, res: Response) => {
                 );
                 // 生成token令牌
                 const token = jwt.sign(
-                    {name: user.name, id: user.id},
+                    {name: user.username, id: user.id},
                     // 密钥
                     process.env.SECRET_KEY || 'uC+0Nnljo9',
                     // 过期时间 默认100小时

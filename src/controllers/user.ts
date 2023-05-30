@@ -79,7 +79,7 @@ const loginUser = async (req: Request, res: Response) => {
     }
     // 生成token令牌 登录成功
     const token = jwt.sign(
-        {name: username, id: user.id},
+        {name: user.username, id: user.id},
         // 密钥
         process.env.SECRET_KEY || 'uC+0Nnljo9',
         // 过期时间 默认6小时
@@ -103,8 +103,8 @@ const loginUser = async (req: Request, res: Response) => {
         msg: '登录成功',
         data: {
             id: user.id, // id
-            userName: user.username, // 登录名
-            name: user.name, // 昵称
+            userName: user.username, // 昵称
+            name: user.name, // 登录名
             remarks: user.remarks, // 备注
             avatar: user.avatar, // 头像
             role: user.role, // 角色
