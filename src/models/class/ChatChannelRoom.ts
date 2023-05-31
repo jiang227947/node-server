@@ -60,13 +60,15 @@ export class ChatChannelRoom {
     /**
      * 减少特定房间中的用户
      */
-    leaveRoom(roomID: string, userId: number): void {
+    leaveRoom(roomID: number, socketId: string): { userName: string, id: number } {
+        let {userName, id} = {};
         this.roomsState = this.roomsState.filter((room: ChatChannelRoomInterface) => {
-            if (+room.roomId === +roomID) {
+            if (+room.roomId === roomID) {
                 // 查询用户下标
-                const findIndex = room.users.findIndex(user => user.id === userId);
-                console.log('findIndex', findIndex);
+                const findIndex = room.users.findIndex(user => user.socketId === socketId);
                 if (findIndex >= 0) {
+                    userName = room.users[findIndex].userName;
+                    id = room.users[findIndex].id;
                     // 删除
                     room.users.splice(findIndex, 1);
                 } else {
@@ -75,5 +77,6 @@ export class ChatChannelRoom {
             }
             return true;
         });
+        return {userName, id};
     }
 }

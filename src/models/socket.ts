@@ -70,7 +70,13 @@ io.on('connection', async (socket) => {
         // 添加room
         socket.join(room.roomId + '');
         // 系统消息 发送给room房间
-        socket.to(room.roomId + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: SystemMessagesEnum.join, userName});
+        socket.to(room.roomId + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {
+            systemStates: SystemMessagesEnum.join,
+            userName,
+            id: decode.id,
+            socketId: socket.id,
+            timestamp: new Date().toISOString()
+        });
     }
 
     /**
@@ -167,7 +173,6 @@ io.on('connection', async (socket) => {
      */
     socket.on(ChatChannelsMessageTypeEnum.systemMessage, (message: any, callback) => {
         console.log('接收系统消息', message);
-        console.log('接收系统消息', socket.rooms);
         try {
             /*switch (message.type) {
                 // 一般消息
@@ -222,11 +227,17 @@ io.on('connection', async (socket) => {
     /**
      * 连接断开
      */
-    socket.on('disconnect', (evt) => {
-        // console.log('roomsList', roomsList);
-        // leave room
-        // new ChatChannelRoom(roomsList).leaveRoom(roomID);
-        console.log('连接断开', evt);
+    socket.on('disconnect', () => {
+        console.log('连接断开', socket);
+        // 删除断开的房间用户
+        const {userName, id} = new ChatChannelRoom(roomsList).leaveRoom(CHANNEL_ID, socket.id);
+        socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {
+            systemStates: SystemMessagesEnum.left,
+            userName,
+            id,
+            socketId: socket.id,
+            timestamp: new Date().toISOString()
+        });
     });
     /**
      * 连接关闭
