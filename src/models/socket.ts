@@ -11,6 +11,7 @@ import {
     ChatChannelsMessageTypeEnum, SystemMessagesEnum
 } from '../enum/chat-channels.enum';
 import {ChatChannelRoom} from './class/ChatChannelRoom';
+import User from './user';
 
 /**
  * websocket服务
@@ -35,7 +36,10 @@ const io = new Server(SocketServer, {
 });
 // 用于保存有关创建的每个房间 ID 和该房间中的用户数量的信息
 const roomsList: ChatChannelRoomInterface[] = [];
-
+// 用于保存聊天记录信息 每50条保存一次
+const chatHistoryInformation = [];
+// 最多存储50条记录
+const MAX_RECORD = 50;
 // 默认频道为8808
 const CHANNEL_ID: number = 8808;
 // todo：频道后面改成可以自己创建群组
@@ -53,17 +57,12 @@ io.on('connection', async (socket) => {
     const token: string | any = socket.handshake.headers.token;
     // 解密token
     const userInfo = decipher(token);
-    let userName: string = '';
     if (userInfo) {
         // 用户进入房间信息
         const decode = jwt.decode(userInfo) as { name: string, id: number, iat: number, exp: number };
-        userName = decode.name;
+        const user: any = await User.findOne({where: {id: decode.id}});
         console.log('socket连接成功!', decode.name, socket.id);
-        // join a room
-        // socket.join('some room id');
-
-        // socket.to('some room id').emit('some event');
-        const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, decode.id, userName, socket.id);
+        const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id);
         console.log('房间列表', room);
         // 转发给客户端房间信息
         socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: SystemMessagesEnum.roomInfo, ...room});
@@ -72,9 +71,13 @@ io.on('connection', async (socket) => {
         // 系统消息 发送给room房间
         socket.to(room.roomId + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {
             systemStates: SystemMessagesEnum.join,
-            userName,
             id: decode.id,
             socketId: socket.id,
+            userName: user.username,
+            avatar: user.avatar, // 头像
+            remarks: user.remarks, // 备注
+            role: user.role,
+            roleName: user.roleName,
             timestamp: new Date().toISOString()
         });
     }
@@ -89,7 +92,8 @@ io.on('connection', async (socket) => {
             // 转发给公共频道
             // socket.emit(ChatChannelsMessageTypeEnum.publicMessage, {type: 'public', parseMessage});
             // 系统消息 发送给room房间
-            socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
+            socket.to(parseMessage.channel_id).emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
+            chatHistoryInformation.push(parseMessage);
             // 接收消息成功回调
             callback({
                 status: ChatChannelsCallbackEnum.ok
@@ -111,6 +115,7 @@ io.on('connection', async (socket) => {
             console.log('房间消息', parseMessage);
             // 发送给room房间
             socket.to(parseMessage.channel_id).emit(ChatChannelsMessageTypeEnum.roomMessage, parseMessage);
+            chatHistoryInformation.push(parseMessage);
             // 接收消息成功回调
             callback({
                 status: ChatChannelsCallbackEnum.ok
@@ -228,16 +233,19 @@ io.on('connection', async (socket) => {
      * 连接断开
      */
     socket.on('disconnect', () => {
-        console.log('连接断开', socket);
+        console.log('连接断开', socket.id);
         // 删除断开的房间用户
         const {userName, id} = new ChatChannelRoom(roomsList).leaveRoom(CHANNEL_ID, socket.id);
-        socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {
+        // console.log('roomsList', roomsList[0]);
+        const parseMessage = {
             systemStates: SystemMessagesEnum.left,
             userName,
             id,
             socketId: socket.id,
             timestamp: new Date().toISOString()
-        });
+        };
+        chatHistoryInformation.push(parseMessage);
+        socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
     });
     /**
      * 连接关闭

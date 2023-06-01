@@ -18,15 +18,14 @@ export class ChatChannelRoom {
     /**
      * 添加房间
      * @param roomName 房间名
-     * @param id 用户id
-     * @param userName 用户名
+     * @param user 用户信息
      * @param socketId 用户socketId
      */
-    joinRoom(roomName: string, id: number, userName: string, socketId: string): Promise<ChatChannelRoomInterface> {
+    joinRoom(roomName: string, user: any, socketId: string): Promise<ChatChannelRoomInterface> {
         return new Promise((resolve) => {
             for (let i = 0; i < this.roomsState.length; i++) {
                 // 判断该用户是否已经在房间内
-                const findIndex = this.roomsState[i].users.findIndex(item => item.id === id);
+                const findIndex = this.roomsState[i].users.findIndex(item => item.id === user.id);
                 if (findIndex >= 0) {
                     // 重新赋值socketId
                     this.roomsState[i].users[findIndex].socketId = socketId;
@@ -35,7 +34,15 @@ export class ChatChannelRoom {
                 } else {
                     // 新加入没满的房间
                     if (this.roomsState[i].users.length < ROOM_MAX_CAPACITY) {
-                        this.roomsState[i].users.push({id, socketId, userName});
+                        this.roomsState[i].users.push({
+                            socketId,
+                            id: user.id,
+                            userName: user.username,
+                            avatar: user.avatar, // 头像
+                            remarks: user.remarks, // 备注
+                            role: user.role,
+                            roleName: user.roleName
+                        });
                         // 返回加入的房间
                         return resolve(this.roomsState[i]);
                     }
@@ -44,11 +51,19 @@ export class ChatChannelRoom {
             // 新增房间
             // const roomId = uuidv4();
             const roomId: string = '8808';
-            console.log('新增房间', {id, userName});
-            const room = {
+            console.log('新增房间', {id: user.id, userName: user.username});
+            const room: ChatChannelRoomInterface = {
                 roomId,
                 roomName: `${roomName}${this.roomsState.length + 1}`,
-                users: [{id, socketId, userName}],
+                users: [{
+                    socketId,
+                    id: user.id,
+                    userName: user.username,
+                    avatar: user.avatar, // 头像
+                    remarks: user.remarks, // 备注
+                    role: user.role,
+                    roleName: user.roleName
+                }],
             };
             // 加入房间
             this.roomsState.push(room);
@@ -61,7 +76,7 @@ export class ChatChannelRoom {
      * 减少特定房间中的用户
      */
     leaveRoom(roomID: number, socketId: string): { userName: string, id: number } {
-        let {userName, id} = {};
+        let {userName, id} = {userName: '', id: 0};
         this.roomsState = this.roomsState.filter((room: ChatChannelRoomInterface) => {
             if (+room.roomId === roomID) {
                 // 查询用户下标

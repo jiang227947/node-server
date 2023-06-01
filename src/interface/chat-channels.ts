@@ -17,7 +17,13 @@ export interface ChatChannelRoomInterface {
         // 名称
         userName: string;
         // 头像
-        avatar?: string;
+        avatar: string;
+        // 备注
+        remarks: string;
+        // 角色
+        role: string;
+        // 角色名称
+        roleName: string;
     }[]
 }
 
