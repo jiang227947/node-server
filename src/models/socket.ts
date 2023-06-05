@@ -80,6 +80,8 @@ io.on('connection', async (socket) => {
             roleName: user.roleName,
             timestamp: new Date().toISOString()
         });
+    } else {
+        socket.disconnect();
     }
 
     /**
