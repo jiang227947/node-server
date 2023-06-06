@@ -10,8 +10,8 @@ import {
     ChatChannelsCallbackEnum,
     ChatChannelsMessageTypeEnum, SystemMessagesEnum
 } from '../enum/chat-channels.enum';
-import {ChatChannelRoom} from './class/ChatChannelRoom';
 import User from './user';
+import {ChatChannelRoom} from './class/ChatChannelRoom';
 
 /**
  * websocket服务

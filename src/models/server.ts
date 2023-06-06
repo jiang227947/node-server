@@ -26,12 +26,13 @@ class Servers {
     this.socketPort = process.env.SOCKETPORT || '3022';
     // 默认启动
     this.listen();
-    // json数据
-    this.midlewares();
-    // 添加路由接口
-    this.routes();
     // 创建数据库
-    this.dbConnect().then();
+    this.dbConnect().then(()=>{
+        // json数据
+        this.midlewares();
+        // 添加路由接口
+        this.routes();
+    });
   }
 
   /**
