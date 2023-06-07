@@ -1,5 +1,5 @@
 import http from 'http';
-import express from 'express';
+import express, {Request, Response} from 'express';
 import {Server} from 'socket.io';
 import jwt from 'jsonwebtoken';
 import {decipher} from '../util/encipher';
@@ -10,8 +10,10 @@ import {
     ChatChannelsCallbackEnum,
     ChatChannelsMessageTypeEnum, SystemMessagesEnum
 } from '../enum/chat-channels.enum';
-import User from './user';
-import {ChatChannelRoom} from './class/ChatChannelRoom';
+import User from '../models/user.models';
+import {ChatChannelRoom} from '../models/class/ChatChannelRoom';
+import Visitor from '../models/visitor.models';
+import ChatDatabase from '../models/chat.models';
 
 /**
  * websocket服务
@@ -37,7 +39,7 @@ const io = new Server(SocketServer, {
 // 用于保存有关创建的每个房间 ID 和该房间中的用户数量的信息
 const roomsList: ChatChannelRoomInterface[] = [];
 // 用于保存聊天记录信息 每50条保存一次
-const chatHistoryInformation = [];
+let chatHistoryInformation: any[] = [];
 // 最多存储50条记录
 const MAX_RECORD = 50;
 // 默认频道为8808
@@ -96,6 +98,11 @@ io.on('connection', async (socket) => {
             // 系统消息 发送给room房间
             socket.to(parseMessage.channel_id).emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
             chatHistoryInformation.push(parseMessage);
+            console.log(chatHistoryInformation);
+            // 保存记录
+            if (chatHistoryInformation.length === MAX_RECORD) {
+                saveMessage();
+            }
             // 接收消息成功回调
             callback({
                 status: ChatChannelsCallbackEnum.ok
@@ -118,6 +125,10 @@ io.on('connection', async (socket) => {
             // 发送给room房间
             socket.to(parseMessage.channel_id).emit(ChatChannelsMessageTypeEnum.roomMessage, parseMessage);
             chatHistoryInformation.push(parseMessage);
+            // 保存记录
+            if (chatHistoryInformation.length === MAX_RECORD) {
+                saveMessage();
+            }
             // 接收消息成功回调
             callback({
                 status: ChatChannelsCallbackEnum.ok
@@ -247,6 +258,10 @@ io.on('connection', async (socket) => {
             timestamp: new Date().toISOString()
         };
         chatHistoryInformation.push(parseMessage);
+        // 保存记录
+        if (chatHistoryInformation.length === MAX_RECORD) {
+            saveMessage();
+        }
         socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
     });
     /**
@@ -268,5 +283,25 @@ io.on('connection', async (socket) => {
         console.log('连接错误', evt);
     });
 });
+
+
+/**
+ * 保存聊天消息
+ * 每50条保存一次
+ * @constructor
+ */
+const saveMessage = async () => {
+    try {
+        const saveTime = new Date().getTime();
+        const content = JSON.stringify(chatHistoryInformation);
+        console.log(content);
+        // 清空
+        chatHistoryInformation = [];
+        // 新增记录
+        await ChatDatabase.create({content, saveTime});
+    } catch (error) {
+        console.log('保存失败');
+    }
+};
 
 export {SocketServer, io};

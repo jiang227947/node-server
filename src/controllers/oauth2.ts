@@ -1,6 +1,6 @@
 import {Request, Response} from "express";
 import {AxiosResponse, default as axios} from "axios";
-import User from "../models/user";
+import User from "../models/user.models";
 import {UserRoleEnum} from "../enum/user.enum";
 import jwt from "jsonwebtoken";
 import {encipher} from "../util/encipher";

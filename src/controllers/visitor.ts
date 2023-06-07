@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import Visitor from '../models/visitor';
+import Visitor from '../models/visitor.models';
 
 /**
  * 访客数据新增

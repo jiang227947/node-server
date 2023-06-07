@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import User from '../models/user';
+import User from '../models/user.models';
 import jwt from 'jsonwebtoken';
 import {encipher} from '../util/encipher';
 import {ResultListPage} from '../models/class/ResultList';
@@ -20,10 +20,11 @@ const newUser = async (req: Request, res: Response) => {
 
     // 验证是否存在相同用户
     const userRepeat = await User.findOne({where: {name}});
-    if (userRepeat) {
+    const usernameRepeat = await User.findOne({where: {username}});
+    if (userRepeat || usernameRepeat) {
         return res.json({
             code: -1,
-            msg: `用户名已存在`,
+            msg: `用户名或昵称已存在`,
         });
     }
 

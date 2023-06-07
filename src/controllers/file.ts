@@ -1,7 +1,7 @@
 import {Request, Response} from 'express';
 import fs from 'fs';
 import multer from 'multer';
-import Filedb from '../models/file';
+import Filedb from '../models/file.models';
 import {ResultListPage} from '../models/class/ResultList';
 
 

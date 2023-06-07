@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import LeaveMessage from '../models/leave-message';
+import LeaveMessage from '../models/leave-message.models';
 
 /**
  * 添加留言

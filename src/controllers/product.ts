@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Product from '../models/product';
+import Product from '../models/product.models';
 
 /**
  * 获取产品接口

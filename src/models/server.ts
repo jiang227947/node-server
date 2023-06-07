@@ -1,17 +1,18 @@
 import express, { Application } from 'express';
 import cors from 'cors';
-import Product from './product';
-import User from './user';
-import UserRouter from '../routes/user';
-import ProductRouter from '../routes/product';
-import FileOperation from '../routes/file';
-import Filedb from './file';
-import { SocketServer } from './socket';
-import LeaveMessage from './leave-message';
-import LeaveMessageRouter from '../routes/leave-message';
-import ChatMessageSendRouter from '../routes/chat';
-import Visitor from './visitor';
-import Oauth2Router from "../routes/oauth2";
+import Product from './product.models';
+import User from './user.models';
+import UserRouter from '../routes/user.router';
+import ProductRouter from '../routes/product.router';
+import FileOperation from '../routes/file.router';
+import Filedb from './file.models';
+import { SocketServer } from '../controllers/socket';
+import LeaveMessage from './leave-message.models';
+import LeaveMessageRouter from '../routes/leave-message.router';
+import Visitor from './visitor.models';
+import Oauth2Router from "../routes/oauth2.router";
+import ChatDatabase from './chat.models';
+import ChatMessage from '../routes/chat.router';
 
 class Servers {
   private app: Application;
@@ -62,8 +63,8 @@ class Servers {
     this.app.use(FileOperation);
     // 留言路由
     this.app.use(LeaveMessageRouter);
-    // socket路由
-    this.app.use(ChatMessageSendRouter);
+    // 查询聊天记录路由
+    this.app.use(ChatMessage);
   }
 
   /**
@@ -108,6 +109,8 @@ class Servers {
       await LeaveMessage.sync();
       // 访问表
       await Visitor.sync();
+      // 聊天记录表
+      await ChatDatabase.sync();
     } catch (error) {
       console.log('数据库连接失败', error);
     }
