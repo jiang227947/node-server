@@ -24,7 +24,9 @@ export interface ChatChannelRoomInterface {
         role: string;
         // 角色名称
         roleName: string;
-    }[]
+    }[];
+    // 最近的聊天信息
+    messages: string;
 }
 
 /**

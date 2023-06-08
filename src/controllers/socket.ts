@@ -49,7 +49,7 @@ const CHANNEL_ID: number = 8808;
  * 连接
  */
 io.on('connection', async (socket) => {
-    console.log('socket.recovered', socket.recovered);
+    // console.log('socket.recovered', socket.recovered);
     if (socket.recovered) {
         // recovery was successful: socket.id, socket.rooms and socket.data were restored
     } else {
@@ -64,8 +64,12 @@ io.on('connection', async (socket) => {
         const decode = jwt.decode(userInfo) as { name: string, id: number, iat: number, exp: number };
         const user: any = await User.findOne({where: {id: decode.id}});
         console.log('socket连接成功!', decode.name, socket.id);
-        const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id);
-        console.log('房间列表', room);
+        // console.log(chatHistoryInformation);
+        const content = JSON.stringify(chatHistoryInformation);
+        // console.log(roomsList);
+        const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id, content);
+        room.messages = content;
+        // console.log('房间列表', room);
         // 转发给客户端房间信息
         socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: SystemMessagesEnum.roomInfo, ...room});
         // 添加room
@@ -98,7 +102,6 @@ io.on('connection', async (socket) => {
             // 系统消息 发送给room房间
             socket.to(parseMessage.channel_id).emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
             chatHistoryInformation.push(parseMessage);
-            console.log(chatHistoryInformation);
             // 保存记录
             if (chatHistoryInformation.length === MAX_RECORD) {
                 saveMessage();
@@ -294,7 +297,7 @@ const saveMessage = async () => {
     try {
         const saveTime = new Date().getTime();
         const content = JSON.stringify(chatHistoryInformation);
-        console.log(content);
+        // console.log(content);
         // 清空
         chatHistoryInformation = [];
         // 新增记录
