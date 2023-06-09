@@ -260,11 +260,11 @@ io.on('connection', async (socket) => {
             socketId: socket.id,
             timestamp: new Date().toISOString()
         };
-        chatHistoryInformation.push(parseMessage);
-        // 保存记录
-        if (chatHistoryInformation.length === MAX_RECORD) {
-            saveMessage();
-        }
+        // chatHistoryInformation.push(parseMessage);
+        // // 保存记录
+        // if (chatHistoryInformation.length === MAX_RECORD) {
+        //     saveMessage();
+        // }
         socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
     });
     /**
