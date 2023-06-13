@@ -68,10 +68,6 @@ const ChatDatabase = sequelize.define('chat', {
     mentionEveryone: {
         type: DataTypes.BOOLEAN,
     },
-    // 提及的角色
-    mentionRoles: {
-        type: DataTypes.STRING,
-    },
     // 提及的人名称信息
     mentions: {
         type: DataTypes.STRING,

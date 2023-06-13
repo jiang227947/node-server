@@ -66,8 +66,6 @@ export interface ChatMessagesInterface {
     id: number;
     // 提及的人
     mention_everyone: boolean;
-    // 提及的角色
-    mention_roles: any[];
     // 提及的人名称信息
     mentions: any[];
     // 留言参考
