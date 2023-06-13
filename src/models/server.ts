@@ -1,9 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
-import Product from './product.models';
 import User from './user.models';
 import UserRouter from '../routes/user.router';
-import ProductRouter from '../routes/product.router';
 import FileOperation from '../routes/file.router';
 import Filedb from './file.models';
 import { SocketServer } from '../controllers/socket';
@@ -27,13 +25,17 @@ class Servers {
     this.socketPort = process.env.SOCKETPORT || '3022';
     // 默认启动
     this.listen();
-    // 创建数据库
-    this.dbConnect().then(()=>{
+    try {
+      // 创建数据库
+      this.dbConnect().then(()=>{
         // json数据
         this.midlewares();
         // 添加路由接口
         this.routes();
-    });
+      });
+    }catch (e) {
+        console.error('连接数据库失败');
+    }
   }
 
   /**
@@ -54,7 +56,6 @@ class Servers {
    * 注册路由模块
    */
   routes(): void {
-    this.app.use(ProductRouter);
     // 用户路由
     this.app.use(UserRouter);
     // 第三方登录路由
@@ -100,7 +101,6 @@ class Servers {
       // 测试连接
       // await sequelize.authenticate();
       // 如果表不存在,则创建该表(如果已经存在,则不执行任何操作)
-      await Product.sync();
       // 用户表
       await User.sync();
       // 文件路径表

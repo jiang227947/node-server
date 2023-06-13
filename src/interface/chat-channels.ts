@@ -25,8 +25,6 @@ export interface ChatChannelRoomInterface {
         // 角色名称
         roleName: string;
     }[];
-    // 最近的聊天信息
-    messages: string;
 }
 
 /**
@@ -50,18 +48,18 @@ export interface ChatMessagesInterface {
         // 公共标签
         public_flags: number;
         // 用户名
-        username: string;
-    };
+        userName: string;
+    } | string;
     // 频道id
-    channel_id: string;
+    channelId: string;
     // 组件
     components: any[];
     // 消息内容
     content: string;
     // 编辑消息的时间
     edited_timestamp: string;
-    // 嵌入
-    embeds: any[];
+    // 反应
+    reaction: any[];
     // 标志
     flags: number;
     // id

@@ -20,9 +20,8 @@ export class ChatChannelRoom {
      * @param roomName 房间名
      * @param user 用户信息
      * @param socketId 用户socketId
-     * @param content 最近的聊天消息
      */
-    joinRoom(roomName: string, user: any, socketId: string, content: string): Promise<ChatChannelRoomInterface> {
+    joinRoom(roomName: string, user: any, socketId: string): Promise<ChatChannelRoomInterface> {
         return new Promise((resolve) => {
             for (let i = 0; i < this.roomsState.length; i++) {
                 // 判断该用户是否已经在房间内
@@ -64,8 +63,7 @@ export class ChatChannelRoom {
                     remarks: user.remarks, // 备注
                     role: user.role,
                     roleName: user.roleName
-                }],
-                messages: content
+                }]
             };
             // 加入房间
             this.roomsState.push(room);

@@ -38,10 +38,6 @@ const io = new Server(SocketServer, {
 });
 // 用于保存有关创建的每个房间 ID 和该房间中的用户数量的信息
 const roomsList: ChatChannelRoomInterface[] = [];
-// 用于保存聊天记录信息 每50条保存一次
-let chatHistoryInformation: any[] = [];
-// 最多存储50条记录
-const MAX_RECORD = 50;
 // 默认频道为8808
 const CHANNEL_ID: number = 8808;
 // todo：频道后面改成可以自己创建群组
@@ -64,11 +60,8 @@ io.on('connection', async (socket) => {
         const decode = jwt.decode(userInfo) as { name: string, id: number, iat: number, exp: number };
         const user: any = await User.findOne({where: {id: decode.id}});
         console.log('socket连接成功!', decode.name, socket.id);
-        // console.log(chatHistoryInformation);
-        const content = JSON.stringify(chatHistoryInformation);
         // console.log(roomsList);
-        const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id, content);
-        room.messages = content;
+        const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id);
         // console.log('房间列表', room);
         // 转发给客户端房间信息
         socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: SystemMessagesEnum.roomInfo, ...room});
@@ -100,12 +93,9 @@ io.on('connection', async (socket) => {
             // 转发给公共频道
             // socket.emit(ChatChannelsMessageTypeEnum.publicMessage, {type: 'public', parseMessage});
             // 系统消息 发送给room房间
-            socket.to(parseMessage.channel_id).emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
-            chatHistoryInformation.push(parseMessage);
+            socket.to(parseMessage.channelId).emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
             // 保存记录
-            if (chatHistoryInformation.length === MAX_RECORD) {
-                saveMessage();
-            }
+            saveMessage(parseMessage);
             // 接收消息成功回调
             callback({
                 status: ChatChannelsCallbackEnum.ok
@@ -126,12 +116,9 @@ io.on('connection', async (socket) => {
         try {
             console.log('房间消息', parseMessage);
             // 发送给room房间
-            socket.to(parseMessage.channel_id).emit(ChatChannelsMessageTypeEnum.roomMessage, parseMessage);
-            chatHistoryInformation.push(parseMessage);
+            socket.to(parseMessage.channelId).emit(ChatChannelsMessageTypeEnum.roomMessage, parseMessage);
             // 保存记录
-            if (chatHistoryInformation.length === MAX_RECORD) {
-                saveMessage();
-            }
+            saveMessage(parseMessage);
             // 接收消息成功回调
             callback({
                 status: ChatChannelsCallbackEnum.ok
@@ -149,8 +136,6 @@ io.on('connection', async (socket) => {
      * allMessage 为规定好的事件名称
      */
     socket.on(ChatChannelsMessageTypeEnum.allMessage, (message: any, callback) => {
-        console.log(message);
-        console.log(socket.rooms);
         try {
             // 接收消息成功回调
             callback({
@@ -231,16 +216,6 @@ io.on('connection', async (socket) => {
     });
 
     /**
-     * 接收所有消息
-     * onallmessage 为规定好的事件名称
-     */
-    socket.on('onallmessage', (msg) => {
-        // console.log(msg);
-        // 转发给全部客户端信息，所有客户端都可以收到
-        socket.emit('onallmessage', '广播 : 这是一条广播消息！');
-    });
-
-    /**
      * 发送给所有人
      */
     // socket.broadcast.emit('system', {some: 'data'});
@@ -260,11 +235,6 @@ io.on('connection', async (socket) => {
             socketId: socket.id,
             timestamp: new Date().toISOString()
         };
-        // chatHistoryInformation.push(parseMessage);
-        // // 保存记录
-        // if (chatHistoryInformation.length === MAX_RECORD) {
-        //     saveMessage();
-        // }
         socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
     });
     /**
@@ -293,15 +263,15 @@ io.on('connection', async (socket) => {
  * 每50条保存一次
  * @constructor
  */
-const saveMessage = async () => {
+const saveMessage = async (msg: ChatMessagesInterface) => {
     try {
-        const saveTime = new Date().getTime();
-        const content = JSON.stringify(chatHistoryInformation);
-        // console.log(content);
-        // 清空
-        chatHistoryInformation = [];
-        // 新增记录
-        await ChatDatabase.create({content, saveTime});
+        const massage = {
+            ...msg,
+            // 作者转换为字符串
+            author: msg.author = JSON.stringify(msg.author),
+            timestamp: msg.timestamp = new Date().toISOString()
+        };
+        await ChatDatabase.create(massage);
     } catch (error) {
         console.log('保存失败');
     }
