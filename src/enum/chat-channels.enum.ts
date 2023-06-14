@@ -44,5 +44,5 @@ export enum SystemMessagesEnum {
     // 用户加入
     join = 'userJoin',
     // 用户离开
-    left = 'userlLeft'
+    left = 'userLeft'
 }

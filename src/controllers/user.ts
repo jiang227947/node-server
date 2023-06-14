@@ -279,7 +279,7 @@ const updateUser = async (req: Request, res: Response) => {
         });
     }
     const aesPassword = encipher(password);
-    // 更新登录时间
+    // 更新
     await user.update(
         {
             avatar, // 头像

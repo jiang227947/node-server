@@ -53,34 +53,38 @@ io.on('connection', async (socket) => {
     }
     // token
     const token: string | any = socket.handshake.headers.token;
-    // 解密token
-    const userInfo = decipher(token);
-    if (userInfo) {
-        // 用户进入房间信息
-        const decode = jwt.decode(userInfo) as { name: string, id: number, iat: number, exp: number };
-        const user: any = await User.findOne({where: {id: decode.id}});
-        console.log('socket连接成功!', decode.name, socket.id);
-        // console.log(roomsList);
-        const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id);
-        // console.log('房间列表', room);
-        // 转发给客户端房间信息
-        socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: SystemMessagesEnum.roomInfo, ...room});
-        // 添加room
-        socket.join(room.roomId + '');
-        // 系统消息 发送给room房间
-        socket.to(room.roomId + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {
-            systemStates: SystemMessagesEnum.join,
-            id: decode.id,
-            socketId: socket.id,
-            userName: user.username,
-            avatar: user.avatar, // 头像
-            remarks: user.remarks, // 备注
-            role: user.role,
-            roleName: user.roleName,
-            timestamp: new Date().toISOString()
-        });
+    if (token) {
+        // 解密token
+        const userInfo = decipher(token);
+        if (userInfo) {
+            // 用户进入房间信息
+            const decode = jwt.decode(userInfo) as { name: string, id: number, iat: number, exp: number };
+            const user: any = await User.findOne({where: {id: decode.id}});
+            console.log('socket连接成功!', decode.name, socket.id);
+            // console.log(roomsList);
+            const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id);
+            // console.log('房间列表', room);
+            // 转发给客户端房间信息
+            socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: SystemMessagesEnum.roomInfo, ...room});
+            // 添加room
+            socket.join(room.roomId + '');
+            // 系统消息 发送给room房间
+            socket.to(room.roomId + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {
+                systemStates: SystemMessagesEnum.join,
+                id: decode.id,
+                socketId: socket.id,
+                userName: user.username,
+                avatar: user.avatar, // 头像
+                remarks: user.remarks, // 备注
+                role: user.role,
+                roleName: user.roleName,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            socket.disconnect();
+        }
     } else {
-        socket.disconnect();
+        // todo 游客身份
     }
 
     /**
