@@ -1,9 +1,9 @@
 import {Request, Response} from 'express';
 import {ResultListPage} from '../models/class/ResultList';
 import ChatDatabase from '../models/chat.models';
-import User from '../models/user.models';
 import {CommonUtil} from '../util/common-util';
-import {ChatMessagesInterface} from '../interface/chat-channels';
+import {AxiosResponse} from 'axios';
+import {GPTMessageInterface} from '../interface/chat-channels';
 
 /**
  * 分页查询聊天记录
@@ -14,8 +14,13 @@ const queryChatMessage = async (req: Request, res: Response) => {
     try {
         const {pageNum, pageSize} = req.body;
         const begin = (pageNum - 1) * pageSize;
+        // console.log('begin', begin);
         // 查询所有聊天消息的数量
         const chatCount = await ChatDatabase.count();
+        // 计算预计拿到的数量和总数相差的值
+        const offset: number = chatCount - pageNum * pageSize;
+        // console.log('offset', offset);
+        // console.log('chatCount', chatCount);
         let totalPage: number;
         // 获取总分页数量
         if (pageSize === 0) {
@@ -23,8 +28,25 @@ const queryChatMessage = async (req: Request, res: Response) => {
         } else {
             totalPage = Math.trunc(chatCount % pageSize === 0 ? chatCount / pageSize : chatCount / pageSize + 1);
         }
+        // 跳过实例
+        let _offset: number;
+        // 获取个实例
+        let _limit: number;
+        // 数量是正数则正常取值
+        if (offset >= 0) {
+            _offset = offset;
+            _limit = pageSize;
+        } else {
+            // 数量是负数说明剩余的分页数量不够想拿到的值
+            _offset = 0;
+            _limit = pageSize - Math.abs(offset);
+        }
         // 跳过offset个实例,然后获取limit个实例
-        const chatList = await ChatDatabase.findAll({offset: begin, limit: pageSize});
+        // console.log(`跳过${_offset}个实例,然后获取${_limit}个实例`);
+        const chatList = await ChatDatabase.findAll({
+            offset: _offset,
+            limit: _limit
+        });
         // 格式化信息
         const msgList = chatList.map(item => {
             return {
@@ -45,7 +67,7 @@ const queryChatMessage = async (req: Request, res: Response) => {
         res.status(200).json(data);
     } catch (e) {
         // 返回结构
-        res.status(400).json({
+        res.status(200).json({
             code: -1,
             msg: `查询失败`,
         });
@@ -98,4 +120,36 @@ const addReaction = async (req: Request, res: Response) => {
     }
 };
 
-export {queryChatMessage, addReaction};
+/**
+ * completions
+ * https://stream.api2d.net/v1/chat/completions
+ */
+const completions = async (req: Request, res: Response) => {
+    const axios = require('axios').default;
+    axios.defaults.timeout = 30000;
+    // token值
+    const API2D_KEY = 'fk186791-RToqs3gWFqVMVivKBFd2fdJlU0o9rUsc';
+    const API2D_TOKEN = '1148|sPsDncYL2iY0yNnrpqaB34dUvUIHKsqQGWaH4woy';
+    const messagesParam: {
+        model: string,
+        messages: {
+            role: string, // 模型身份
+            content: string // 模型返回给你的信息
+        }[]
+    } = req.body.messagesParam;
+    console.log('messagesParam', messagesParam);
+    // 查询余额需要 'Accept', 'application/json' https://api.api2d.com/user/profile
+    axios.post(`https://stream.api2d.net/v1/chat/completions`, {
+        data: messagesParam,
+        headers: {
+            skip: 'true',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API2D_KEY}`
+        }
+    }).then((res: AxiosResponse<GPTMessageInterface>) => {
+    }).catch(() => {
+    });
+};
+
+
+export {queryChatMessage, addReaction, completions};

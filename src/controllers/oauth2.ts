@@ -1,5 +1,5 @@
 import {Request, Response} from "express";
-import {AxiosResponse, default as axios} from "axios";
+import {AxiosResponse} from "axios";
 import User from "../models/user.models";
 import {UserRoleEnum} from "../enum/user.enum";
 import jwt from "jsonwebtoken";
@@ -10,7 +10,7 @@ import {
     GithubAccessTokenResponse,
     GithubUserInterface,
     OauthInterface,
-    qqAccessTokenResponse, QQOpenIDOAuthResponse, QQUserInfoInterface
+    QQOpenIDOAuthResponse, QQUserInfoInterface
 } from "../interface/oauth2";
 
 /**

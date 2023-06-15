@@ -81,3 +81,24 @@ export interface ChatMessagesInterface {
     // 消息类型 用于前端展示判断
     type: ChatMessagesTypeEnum;
 }
+
+/**
+ * GPT返回的消息接口
+ */
+export interface GPTMessageInterface {
+    choices: {
+        message: {
+            role: string, // 模型身份
+            content: string // 模型返回给你的信息
+        },
+        finish_reason: string,
+        index: number
+    }[];
+    created: number;
+    id: string;
+    model: string;
+    object: string;
+    usage: {
+        [key: string]: number;
+    };
+}
