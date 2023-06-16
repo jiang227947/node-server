@@ -6,6 +6,7 @@ import {ResultListPage} from '../models/class/ResultList';
 import {Token} from '../models/class/token';
 import multer from 'multer';
 import fs from 'fs';
+import {ResultCodeEnum} from "../enum/http.enum";
 
 /**
  * 创建用户
@@ -23,7 +24,7 @@ const newUser = async (req: Request, res: Response) => {
     const usernameRepeat = await User.findOne({where: {username}});
     if (userRepeat || usernameRepeat) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `用户名或昵称已存在`,
         });
     }
@@ -38,12 +39,12 @@ const newUser = async (req: Request, res: Response) => {
             roleName,
         });
         res.json({
-            code: 200,
+            code: ResultCodeEnum.success,
             msg: `用户 ${username} 创建成功`,
         });
     } catch (error) {
         res.status(400).json({
-            code: -1,
+            code:ResultCodeEnum.fail,
             msg: `用户创建失败`,
             error,
         });
@@ -65,7 +66,7 @@ const loginUser = async (req: Request, res: Response) => {
     const user: any = await User.findOne({where: {name: username}});
     if (!user) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `用户不存在`,
         });
     }
@@ -74,7 +75,7 @@ const loginUser = async (req: Request, res: Response) => {
     const aesPasswordValid = encipher(password);
     if (aesPasswordValid !== user.password) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `密码错误`,
         });
     }
@@ -100,7 +101,7 @@ const loginUser = async (req: Request, res: Response) => {
     res.setHeader('Set-Cookie', cookie);
     // 返回结构
     res.status(200).json({
-        code: 200,
+        code: ResultCodeEnum.success,
         msg: '登录成功',
         data: {
             id: user.id, // id
@@ -170,7 +171,7 @@ const deleteUser = async (req: Request, res: Response) => {
     const user: any = await User.findOne({where: {id}});
     if (!user) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `用户不存在`,
         });
     }
@@ -178,12 +179,12 @@ const deleteUser = async (req: Request, res: Response) => {
         // 成功删除用户
         await user.destroy();
         res.json({
-            code: 200,
+            code: ResultCodeEnum.success,
             msg: `用户 ${user.name} 删除成功`,
         });
     } catch (error) {
         res.status(400).json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `用户删除失败`,
             error,
         });
@@ -237,13 +238,13 @@ const uploadAvatar = async (req: Request, res: Response) => {
             }
         );
         res.json({
-            code: 200,
+            code: ResultCodeEnum.success,
             msg: `修改成功`,
             data: pathUrl, // 复制URL链接直接浏览器可以访问
         });
     } else {
         res.status(400).json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `修改失败`,
         });
     }
@@ -258,14 +259,14 @@ const updateUser = async (req: Request, res: Response) => {
     const {id, avatar, userName, remarks, password} = req.body;
     if (!id) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: '参数错误',
         });
     }
     const user: any = await User.findOne({where: {id}});
     if (!user) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `用户不存在`,
             user,
         });
@@ -273,7 +274,7 @@ const updateUser = async (req: Request, res: Response) => {
     const userId = req.header('userId');
     if (userId != user.id) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `参数异常`,
             user,
         });
@@ -292,7 +293,7 @@ const updateUser = async (req: Request, res: Response) => {
         }
     );
     res.json({
-        code: 200,
+        code: ResultCodeEnum.success,
         msg: '修改成功',
     });
 };

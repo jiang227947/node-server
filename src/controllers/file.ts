@@ -3,6 +3,7 @@ import fs from 'fs';
 import multer from 'multer';
 import Filedb from '../models/file.models';
 import {ResultListPage} from '../models/class/ResultList';
+import {ResultCodeEnum} from "../enum/http.enum";
 
 
 /**
@@ -75,7 +76,7 @@ const upload = async (req: Request | any, res: Response) => {
         // 判断是否存在
         if (file && file.filesize === req.file.size) {
             return res.json({
-                code: -1,
+                code: ResultCodeEnum.fail,
                 msg: `文件已存在`
             });
         }
@@ -87,7 +88,7 @@ const upload = async (req: Request | any, res: Response) => {
             path: pathUrl,
         });
         res.status(200).json({
-            code: 200,
+            code: ResultCodeEnum.success,
             msg: `上传成功`,
             url: pathUrl, // 复制URL链接直接浏览器可以访问
         });
@@ -105,12 +106,12 @@ const upload = async (req: Request | any, res: Response) => {
             path: JSON.stringify(filesPathUrl),
         });
         res.status(200).json({
-            code: 200,
+            code: ResultCodeEnum.success,
             msg: `上传成功`,
         });
     } else {
         res.status(400).json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `上传失败`,
         });
     }
@@ -126,7 +127,7 @@ const download = async (req: Request, res: Response) => {
     const file: any = await Filedb.findOne({where: {filename}});
     if (!file) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `文件不存在`,
         });
     }
@@ -150,7 +151,7 @@ const deleteFile = async (req: Request, res: Response) => {
     const file: any = await Filedb.findOne({where: {id}});
     if (!file) {
         return res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `文件不存在`,
         });
     }
@@ -161,12 +162,12 @@ const deleteFile = async (req: Request, res: Response) => {
         // 成功删除
         await file.destroy();
         res.json({
-            code: 200,
+            code: ResultCodeEnum.success,
             msg: `文件删除成功`,
         });
     } catch (error) {
         res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `文件删除失败`,
             error,
         });

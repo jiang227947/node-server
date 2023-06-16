@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import LeaveMessage from '../models/leave-message.models';
+import {ResultCodeEnum} from "../enum/http.enum";
 
 /**
  * 添加留言
@@ -16,12 +17,12 @@ const addLeaveMessage = async (req: Request, res: Response) => {
       browser,
     });
     res.json({
-      code: 200,
+      code: ResultCodeEnum.success,
       msg: `留言成功`,
     });
   } catch (error) {
     res.status(400).json({
-      code: -1,
+      code: ResultCodeEnum.fail,
       msg: `留言失败`,
       error,
     });
@@ -36,7 +37,7 @@ const addLeaveMessage = async (req: Request, res: Response) => {
 const getLeaveMessage = async (req: Request, res: Response) => {
   const listProducts = await LeaveMessage.findAll();
   res.json({
-    code: 200,
+    code: ResultCodeEnum.success,
     msg: `查询成功`,
     data: listProducts,
   });

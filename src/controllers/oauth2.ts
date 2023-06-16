@@ -12,6 +12,7 @@ import {
     OauthInterface,
     QQOpenIDOAuthResponse, QQUserInfoInterface
 } from "../interface/oauth2";
+import {ResultCodeEnum} from "../enum/http.enum";
 
 /**
  * 根据需要登录的环境生成uuid用来校验
@@ -29,13 +30,13 @@ const uuidState = (req: Request, res: Response) => {
         // 统一加密
         const aesString = encipher(merge);
         res.json({
-            code: 200,
+            code: ResultCodeEnum.success,
             msg: `生成成功`,
             data: aesString
         });
     } catch (error) {
         res.status(400).json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: `生成失败`,
             error,
         });
@@ -435,7 +436,7 @@ const qqOauth = async (req: Request, res: Response) => {
         });
     } catch (e) {
         res.json({
-            code: -1,
+            code: ResultCodeEnum.fail,
             msg: errorMsg,
         });
     }

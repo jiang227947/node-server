@@ -1,5 +1,6 @@
 import {Request, Response} from 'express';
 import Visitor from '../models/visitor.models';
+import {ResultCodeEnum} from "../enum/http.enum";
 
 /**
  * 访客数据新增
@@ -34,7 +35,7 @@ const visitor = async (req: Request, res: Response) => {
             });
         } catch (error) {
             res.status(400).json({
-                code: -1,
+                code: ResultCodeEnum.fail,
                 msg: `请求失败`,
                 error,
             });
