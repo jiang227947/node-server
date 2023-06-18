@@ -16,7 +16,7 @@ import {Op} from "sequelize";
 const queryChatMessage = async (req: Request, res: Response) => {
     try {
         const {pageNum, pageSize} = req.body;
-        const begin = (pageNum - 1) * pageSize;
+        // const begin = (pageNum - 1) * pageSize;
         // console.log('begin', begin);
         // 查询所有聊天消息的数量
         const chatCount = await ChatDatabase.count();
@@ -89,7 +89,6 @@ const addReaction = async (req: Request, res: Response) => {
         const message = await ChatDatabase.findOne({where: {id}});
         if (message) {
             const reaction = CommonUtil.addReaction(message.dataValues.reaction, emoji, userId);
-            console.log(reaction);
             // 更新反应表情
             await message.update(
                 {
@@ -250,8 +249,8 @@ const completions = async (req: Request, res: Response) => {
     axios.defaults.timeout = 30000;
     try {
         // token值
-        const API2D_KEY = 'fk186791-RToqs3gWFqVMVivKBFd2fdJlU0o9rUsc';
-        const API2D_TOKEN = '1148|sPsDncYL2iY0yNnrpqaB34dUvUIHKsqQGWaH4woy';
+        // const API2D_KEY = 'fk186791-RToqs3gWFqVMVivKBFd2fdJlU0o9rUsc';
+        // const API2D_TOKEN = '1148|sPsDncYL2iY0yNnrpqaB34dUvUIHKsqQGWaH4woy';
         const messagesParam: {
             model: string,
             messages: {

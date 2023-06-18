@@ -10,8 +10,7 @@ export class CommonUtil {
      */
     public static addReaction(reaction: string, emoji: string, userId: number): any[] {
         let _reaction = [];
-        console.log(reaction);
-        if (!reaction) {
+        if (!reaction || reaction === '[]') {
             // 没有反应直接新增
             _reaction.push({
                 emoji,
