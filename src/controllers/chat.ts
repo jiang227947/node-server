@@ -2,13 +2,11 @@ import {Request, Response} from 'express';
 import {ResultListPage} from '../models/class/ResultList';
 import ChatDatabase from '../models/chat.models';
 import {CommonUtil} from '../util/common-util';
-import {AxiosResponse} from 'axios';
-import {GPTMessageInterface} from '../interface/chat-channels';
 import {ResultCodeEnum} from "../enum/http.enum";
 import multer from "multer";
 import fs from "fs";
-import User from "../models/user.models";
 import ChatChannelDatabase from "../models/chat-channel.models";
+import {Op} from "sequelize";
 
 /**
  * 分页查询聊天记录
@@ -115,7 +113,6 @@ const addReaction = async (req: Request, res: Response) => {
             });
         }
     } catch (e) {
-        console.log(e);
         console.log('添加反应表情失败');
         // 返回结构
         res.status(400).json({
@@ -159,7 +156,7 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
                 // 更新新头像
                 await channel.update({avatar: `${path}/${req.file?.originalname}`}, {where: {id}});
             } else {
-                // 保存新头像
+                // 返回头像路径
                 res.json({
                     code: ResultCodeEnum.success,
                     msg: `上传成功`,
@@ -174,6 +171,72 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
         }
     } catch (e) {
 
+    }
+};
+
+/**
+ * 创建频道
+ * @param req
+ * @param res
+ */
+const createChannel = async (req: Request, res: Response) => {
+    try {
+        const {avatar, channelName, tags, admins, isPrivacy, password, remark} = req.body;
+        const isChannelName = await ChatChannelDatabase.findOne(({where: {channelName}}));
+        // 判断是否重名
+        if (isChannelName) {
+            // 返回结构
+            res.json({
+                code: ResultCodeEnum.fail,
+                msg: `频道名称已存在`,
+            });
+            return;
+        }
+        // 创建数据
+        await ChatChannelDatabase.create({avatar, channelName, tags, admins, isPrivacy, password, remark});
+        // 返回结构
+        res.json({
+            code: ResultCodeEnum.success,
+            msg: `创建频道成功`,
+            data: null
+        });
+    } catch (e) {
+        // 返回结构
+        res.json({
+            code: ResultCodeEnum.fail,
+            msg: `创建频道失败`,
+        });
+    }
+};
+
+/**
+ * 查询频道
+ * @param req
+ * @param res
+ */
+const queryChannel = async (req: Request, res: Response) => {
+    try {
+        const {id} = req.query;
+        const channel: any = await ChatChannelDatabase.findAll({
+            where: {
+                admins: {
+                    // 带上like查询条件
+                    [Op.like]: `%${id}%`
+                },
+            },
+        });
+        // 返回结构
+        res.json({
+            code: ResultCodeEnum.success,
+            msg: '查询成功',
+            data: channel
+        });
+    } catch (e) {
+        // 返回结构
+        res.json({
+            code: ResultCodeEnum.fail,
+            msg: `查询失败`,
+        });
     }
 };
 
@@ -228,5 +291,7 @@ export {
     addReaction,
     completions,
     uploadChannelAvatarMulter,
-    uploadChannelAvatar
+    uploadChannelAvatar,
+    createChannel,
+    queryChannel
 };

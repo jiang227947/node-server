@@ -12,7 +12,6 @@ import {
 } from '../enum/chat-channels.enum';
 import User from '../models/user.models';
 import {ChatChannelRoom} from '../models/class/ChatChannelRoom';
-import Visitor from '../models/visitor.models';
 import ChatDatabase from '../models/chat.models';
 
 /**

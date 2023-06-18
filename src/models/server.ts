@@ -1,16 +1,19 @@
 import express, {Application} from 'express';
 import cors from 'cors';
-import User from './user.models';
+import {SocketServer} from '../controllers/socket';
+// Router
 import UserRouter from '../routes/user.router';
 import FileOperation from '../routes/file.router';
-import Filedb from './file.models';
-import {SocketServer} from '../controllers/socket';
-import LeaveMessage from './leave-message.models';
 import LeaveMessageRouter from '../routes/leave-message.router';
-import Visitor from './visitor.models';
+import ChatMessageRouter from '../routes/chat.router';
 import Oauth2Router from "../routes/oauth2.router";
+import ChatChannelRouter from "../routes/chat-channel.router";
+// Models
+import User from './user.models';
+import Filedb from './file.models';
+import LeaveMessage from './leave-message.models';
+import Visitor from './visitor.models';
 import ChatDatabase from './chat.models';
-import ChatMessage from '../routes/chat.router';
 import ChatChannelDatabase from "./chat-channel.models";
 
 class Servers {
@@ -65,8 +68,10 @@ class Servers {
         this.app.use(FileOperation);
         // 留言路由
         this.app.use(LeaveMessageRouter);
-        // 查询聊天记录路由
-        this.app.use(ChatMessage);
+        // 聊天记录路由
+        this.app.use(ChatMessageRouter);
+        // 聊天频道路由
+        this.app.use(ChatChannelRouter);
     }
 
     /**
