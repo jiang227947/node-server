@@ -1,5 +1,5 @@
 import http from 'http';
-import express, {Request, Response} from 'express';
+import express from 'express';
 import {Server} from 'socket.io';
 import jwt from 'jsonwebtoken';
 import {decipher} from '../util/encipher';
@@ -26,7 +26,7 @@ const io = new Server(SocketServer, {
     },
     connectionStateRecovery: {
         // 会话和报文的备份时间
-        maxDisconnectionDuration: 1 * 60 * 1000,
+        maxDisconnectionDuration: 60 * 1000,
         // 恢复成功后是否跳过中间件
         skipMiddlewares: true,
     },
@@ -38,7 +38,7 @@ const io = new Server(SocketServer, {
 // 用于保存有关创建的每个房间 ID 和该房间中的用户数量的信息
 const roomsList: ChatChannelRoomInterface[] = [];
 // 默认频道为8808
-const CHANNEL_ID: number = 8808;
+// const CHANNEL_ID: string = '8808';
 // todo：频道后面改成可以自己创建群组
 /**
  * 连接
@@ -60,15 +60,27 @@ io.on('connection', async (socket) => {
             const decode = jwt.decode(userInfo) as { name: string, id: number, iat: number, exp: number };
             const user: any = await User.findOne({where: {id: decode.id}});
             console.log('socket连接成功!', decode.name, socket.id);
-            // console.log(roomsList);
-            const room: ChatChannelRoomInterface = await new ChatChannelRoom(roomsList).joinRoom(`公共聊天室`, user, socket.id);
-            // console.log('房间列表', room);
+            let room: ChatChannelRoomInterface;
+            // 准备连接的频道ID
+            const channelId: string = socket.handshake.headers.channelid as string;
+            if (channelId !== 'undefined') {
+                // 加入指定的频道
+                room = await new ChatChannelRoom(roomsList).joinRoomToChannel(channelId, user, socket.id);
+            } else {
+                // 加入闲聊频道
+                room = await new ChatChannelRoom(roomsList).joinRoom(`闲聊频道`, user, socket.id);
+                if (!room) {
+                    socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: null, msg: '不存在该频道'});
+                    return;
+                }
+            }
+            // console.log('房间列表', room, roomsList);
             // 转发给客户端房间信息
             socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: SystemMessagesEnum.roomInfo, ...room});
             // 添加room
-            socket.join(room.roomId + '');
+            socket.join(room.roomId);
             // 系统消息 发送给room房间
-            socket.to(room.roomId + '').emit(ChatChannelsMessageTypeEnum.systemMessage, {
+            socket.to(room.roomId).emit(ChatChannelsMessageTypeEnum.systemMessage, {
                 systemStates: SystemMessagesEnum.join,
                 id: decode.id,
                 socketId: socket.id,
@@ -229,7 +241,7 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', () => {
         console.log('连接断开', socket.id);
         // 删除断开的房间用户
-        const {userName, id} = new ChatChannelRoom(roomsList).leaveRoom(CHANNEL_ID, socket.id);
+        const {userName, id, channelId} = new ChatChannelRoom(roomsList).leaveRoom(socket.id);
         // console.log('roomsList', roomsList[0]);
         const parseMessage = {
             systemStates: SystemMessagesEnum.left,
@@ -238,7 +250,7 @@ io.on('connection', async (socket) => {
             socketId: socket.id,
             timestamp: new Date().toISOString()
         };
-        socket.to(CHANNEL_ID + '').emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
+        socket.to(channelId).emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
     });
     /**
      * 连接关闭

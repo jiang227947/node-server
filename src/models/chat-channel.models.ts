@@ -2,7 +2,7 @@ import sequelize from "../db/connection";
 import {DataTypes} from "sequelize";
 
 /**
- * 聊天记录保存模型定义
+ * 聊天频道模型定义
  */
 const ChatChannelDatabase = sequelize.define('chat_channel', {
     id: {
@@ -15,6 +15,10 @@ const ChatChannelDatabase = sequelize.define('chat_channel', {
     },
     // 频道名称
     channelName: {
+        type: DataTypes.STRING,
+    },
+    // 频道ID
+    channelId: {
         type: DataTypes.STRING,
     },
     // 头像

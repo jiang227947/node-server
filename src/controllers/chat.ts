@@ -2,11 +2,12 @@ import {Request, Response} from 'express';
 import {ResultListPage} from '../models/class/ResultList';
 import ChatDatabase from '../models/chat.models';
 import {CommonUtil} from '../util/common-util';
-import {ResultCodeEnum} from "../enum/http.enum";
-import multer from "multer";
-import fs from "fs";
-import ChatChannelDatabase from "../models/chat-channel.models";
-import {Op} from "sequelize";
+import {ResultCodeEnum} from '../enum/http.enum';
+import multer from 'multer';
+import fs from 'fs';
+import ChatChannelDatabase from '../models/chat-channel.models';
+import {Op} from 'sequelize';
+import {v4 as uuidv4} from 'uuid';
 
 /**
  * 分页查询聊天记录
@@ -15,11 +16,11 @@ import {Op} from "sequelize";
  */
 const queryChatMessage = async (req: Request, res: Response) => {
     try {
-        const {pageNum, pageSize} = req.body;
+        const {channelId, pageNum, pageSize} = req.body;
         // const begin = (pageNum - 1) * pageSize;
         // console.log('begin', begin);
         // 查询所有聊天消息的数量
-        const chatCount = await ChatDatabase.count();
+        const chatCount: any = await ChatDatabase.count({where: {channelId}});
         // 计算预计拿到的数量和总数相差的值
         const offset: number = chatCount - pageNum * pageSize;
         // console.log('offset', offset);
@@ -47,6 +48,9 @@ const queryChatMessage = async (req: Request, res: Response) => {
         // 跳过offset个实例,然后获取limit个实例
         // console.log(`跳过${_offset}个实例,然后获取${_limit}个实例`);
         const chatList = await ChatDatabase.findAll({
+            where: {
+                channelId
+            },
             offset: _offset,
             limit: _limit
         });
@@ -141,6 +145,7 @@ const storage = multer.diskStorage({
     },
 });
 const uploadChannelAvatarMulter = multer({storage: storage});
+
 /**
  * 上传频道头像
  */
@@ -181,6 +186,24 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
 const createChannel = async (req: Request, res: Response) => {
     try {
         const {avatar, channelName, tags, admins, isPrivacy, password, remark} = req.body;
+        const userId = req.header('userId');
+        const channel: any = await ChatChannelDatabase.findAll({
+            where: {
+                admins: {
+                    // 带上like查询条件
+                    [Op.like]: `%${userId}%`
+                },
+            },
+        });
+        // 判断该用户的频道数量是否超过三个
+        if (channel.length >= 3) {
+            // 返回结构
+            res.json({
+                code: ResultCodeEnum.fail,
+                msg: `最多创建三个频道`,
+            });
+            return;
+        }
         const isChannelName = await ChatChannelDatabase.findOne(({where: {channelName}}));
         // 判断是否重名
         if (isChannelName) {
@@ -191,13 +214,24 @@ const createChannel = async (req: Request, res: Response) => {
             });
             return;
         }
+        // 生成uuid
+        const uuid = uuidv4();
         // 创建数据
-        await ChatChannelDatabase.create({avatar, channelName, tags, admins, isPrivacy, password, remark});
+        await ChatChannelDatabase.create({
+            channelId: uuid,
+            avatar,
+            channelName,
+            tags,
+            admins,
+            isPrivacy,
+            password,
+            remark
+        });
         // 返回结构
         res.json({
             code: ResultCodeEnum.success,
             msg: `创建频道成功`,
-            data: null
+            data: uuid
         });
     } catch (e) {
         // 返回结构
@@ -214,22 +248,22 @@ const createChannel = async (req: Request, res: Response) => {
  * @param res
  */
 const queryChannel = async (req: Request, res: Response) => {
-    try {
-        const {id} = req.query;
-        const channel: any = await ChatChannelDatabase.findAll({
-            where: {
-                admins: {
-                    // 带上like查询条件
-                    [Op.like]: `%${id}%`
-                },
+    const {id} = req.query;
+    const channel: any = await ChatChannelDatabase.findAll({
+        where: {
+            admins: {
+                // 带上like查询条件
+                [Op.like]: `%${id}%`
             },
-        });
-        // 返回结构
-        res.json({
-            code: ResultCodeEnum.success,
-            msg: '查询成功',
-            data: channel
-        });
+        },
+    });
+    // 返回结构
+    res.json({
+        code: ResultCodeEnum.success,
+        msg: '查询成功',
+        data: channel
+    });
+    try {
     } catch (e) {
         // 返回结构
         res.json({
@@ -239,6 +273,34 @@ const queryChannel = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * 删除频道
+ */
+const deleteChannel = async (req: Request, res: Response) => {
+    try {
+        const {channelId} = req.body;
+        const channel: any = await ChatChannelDatabase.findOne({where: {channelId}});
+        if (!channel) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `频道不存在`,
+            });
+        }
+        // 删除频道
+        await channel.destroy();
+        // 删除频道聊天记录
+        await ChatDatabase.destroy({where: {channelId}});
+        res.json({
+            code: ResultCodeEnum.success,
+            msg: `频道删除成功`,
+        });
+    } catch (e) {
+        res.json({
+            code: ResultCodeEnum.fail,
+            msg: `频道删除失败`,
+        });
+    }
+};
 
 /**
  * completions
@@ -292,5 +354,6 @@ export {
     uploadChannelAvatarMulter,
     uploadChannelAvatar,
     createChannel,
-    queryChannel
+    queryChannel,
+    deleteChannel
 };

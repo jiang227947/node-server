@@ -1,6 +1,12 @@
 import {Router} from "express";
 import validateToken from "./validate-token";
-import {createChannel, queryChannel, uploadChannelAvatar, uploadChannelAvatarMulter} from "../controllers/chat";
+import {
+    createChannel,
+    deleteChannel,
+    queryChannel,
+    uploadChannelAvatar,
+    uploadChannelAvatarMulter
+} from "../controllers/chat";
 
 const ChatChannelRouter = Router();
 
@@ -10,4 +16,6 @@ ChatChannelRouter.post('/api/uploadChannelAvatar', validateToken, uploadChannelA
 ChatChannelRouter.post('/api/createChannel', validateToken, createChannel);
 // 查询频道
 ChatChannelRouter.get('/api/queryChannel', validateToken, queryChannel);
+// 删除频道
+ChatChannelRouter.post('/api/deleteChannel', validateToken, deleteChannel);
 export default ChatChannelRouter;

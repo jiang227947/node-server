@@ -23,7 +23,7 @@ const ChatDatabase = sequelize.define('chat', {
     },
     // 频道id
     channelId: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
         allowNull: false
     },
     // 频道id
