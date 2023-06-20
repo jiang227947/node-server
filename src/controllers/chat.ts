@@ -8,6 +8,7 @@ import fs from 'fs';
 import ChatChannelDatabase from '../models/chat-channel.models';
 import {Op} from 'sequelize';
 import {v4 as uuidv4} from 'uuid';
+import User from '../models/user.models';
 
 /**
  * 分页查询聊天记录
@@ -185,7 +186,7 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
  */
 const createChannel = async (req: Request, res: Response) => {
     try {
-        const {avatar, channelName, tags, admins, isPrivacy, password, remark} = req.body;
+        const {avatar, channelName, tags, admins, announcement, isPrivacy, password, remark} = req.body;
         const userId = req.header('userId');
         const channel: any = await ChatChannelDatabase.findAll({
             where: {
@@ -214,6 +215,18 @@ const createChannel = async (req: Request, res: Response) => {
             });
             return;
         }
+        // 获取用户信息
+        const user: any = await User.findOne({where: {id: userId}});
+        const userInfo = {
+            id: user.id,
+            userName: user.username,
+            avatar: user.avatar,
+            role: user.role,
+            roleName: user.roleName,
+            remarks: user.remarks
+        };
+        // 创建人存入频道
+        const personnel = JSON.stringify([userInfo]);
         // 生成uuid
         const uuid = uuidv4();
         // 创建数据
@@ -223,6 +236,8 @@ const createChannel = async (req: Request, res: Response) => {
             channelName,
             tags,
             admins,
+            personnel,
+            announcement,
             isPrivacy,
             password,
             remark
@@ -251,17 +266,27 @@ const queryChannel = async (req: Request, res: Response) => {
     const {id} = req.query;
     const channel: any = await ChatChannelDatabase.findAll({
         where: {
-            admins: {
+            personnel: {
                 // 带上like查询条件
-                [Op.like]: `%${id}%`
+                [Op.like]: `%"id":${id}%`
             },
         },
+    });
+    // 格式转换
+    const result = channel.map((item: any) => {
+        return {
+            ...item.dataValues,
+            // 管理员格式转换
+            admins: JSON.parse(item.dataValues.admins),
+            // 频道人员格式转换
+            personnel: JSON.parse(item.dataValues.personnel)
+        }
     });
     // 返回结构
     res.json({
         code: ResultCodeEnum.success,
         msg: '查询成功',
-        data: channel
+        data: result
     });
     try {
     } catch (e) {
@@ -298,6 +323,72 @@ const deleteChannel = async (req: Request, res: Response) => {
         res.json({
             code: ResultCodeEnum.fail,
             msg: `频道删除失败`,
+        });
+    }
+};
+
+/**
+ * 加入频道
+ */
+const joinChannel = async (req: Request, res: Response) => {
+    try {
+        const {channelId, password} = req.body;
+        const channel: any = await ChatChannelDatabase.findOne({where: {channelId}});
+        if (!channel) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `频道不存在`,
+            });
+        }
+        // 用户ID
+        const userId = req.header('userId') as string;
+        // 频道人员
+        const channelPersonnel: any[] = JSON.parse(channel.personnel);
+        // console.log('频道人员', channelPersonnel);
+        const isJoin = channelPersonnel.find(item => item.id === +userId);
+        // 验证是否已经加入频道
+        if (isJoin) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `你已经加入该频道`,
+            });
+        }
+        // 校验密码
+        if (channel.isPrivacy === 1 && channel.password !== password) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `密码错误`,
+            });
+        }
+        // 获取用户信息
+        const user: any = await User.findOne({where: {id: userId}});
+        const userInfo = {
+            id: user.id,
+            userName: user.username,
+            avatar: user.avatar,
+            role: user.role,
+            roleName: user.roleName,
+            remarks: user.remarks,
+            lastOnline: new Date().getTime()
+        };
+        const personnel = [...channelPersonnel, userInfo];
+        // 更新频道用户
+        await channel.update(
+            {
+                personnel: JSON.stringify(personnel),
+            },
+            {
+                where: {channelId},
+            }
+        );
+        res.json({
+            code: ResultCodeEnum.success,
+            msg: `频道加入成功`,
+        });
+    } catch (e) {
+        res.json({
+            code: ResultCodeEnum.fail,
+            msg: `频道加入失败`,
         });
     }
 };
@@ -355,5 +446,6 @@ export {
     uploadChannelAvatar,
     createChannel,
     queryChannel,
-    deleteChannel
+    deleteChannel,
+    joinChannel
 };

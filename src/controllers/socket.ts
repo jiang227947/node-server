@@ -242,7 +242,7 @@ io.on('connection', async (socket) => {
         console.log('连接断开', socket.id);
         // 删除断开的房间用户
         const {userName, id, channelId} = new ChatChannelRoom(roomsList).leaveRoom(socket.id);
-        // console.log('roomsList', roomsList[0]);
+        // console.log('连接断开', userName, channelId);
         const parseMessage = {
             systemStates: SystemMessagesEnum.left,
             userName,

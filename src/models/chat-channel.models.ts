@@ -33,6 +33,14 @@ const ChatChannelDatabase = sequelize.define('chat_channel', {
     admins: {
         type: DataTypes.STRING,
     },
+    // 频道人员
+    personnel: {
+        type: DataTypes.TEXT,
+    },
+    // 公告
+    announcement: {
+        type: DataTypes.TEXT,
+    },
     // 是否为私密频道
     isPrivacy: {
         type: DataTypes.INTEGER,

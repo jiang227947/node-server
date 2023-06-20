@@ -8,6 +8,10 @@ export interface ChatChannelRoomInterface {
     roomId: string;
     // 房间名称
     roomName: string;
+    // 公告
+    announcement: string;
+    // 人员
+    personnel: string | ChatChannelRoomUserInterface[];
     // 用户信息
     users: {
         // id
@@ -25,6 +29,28 @@ export interface ChatChannelRoomInterface {
         // 角色名称
         roleName: string;
     }[];
+}
+
+/**
+ * 聊天频道聊天频道在线用户接口
+ */
+export interface ChatChannelRoomUserInterface {
+    // id
+    id: number;
+    // socketId
+    socketId: string;
+    // 名称
+    userName: string;
+    // 头像
+    avatar: string;
+    // 备注
+    remarks: string;
+    // 角色
+    role: string;
+    // 角色名称
+    roleName: string;
+    // 最后一次在线时间
+    lastOnline: number;
 }
 
 /**

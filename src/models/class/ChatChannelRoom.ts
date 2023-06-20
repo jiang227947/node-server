@@ -1,7 +1,7 @@
 /**
  * 聊天频道房间类
  */
-import {ChatChannelRoomInterface} from '../../interface/chat-channels';
+import {ChatChannelRoomInterface, ChatChannelRoomUserInterface} from '../../interface/chat-channels';
 import ChatChannelDatabase from '../chat-channel.models';
 
 // 每个房间允许的最大人数
@@ -22,7 +22,7 @@ export class ChatChannelRoom {
      * @param socketId 用户socketId
      */
     joinRoom(roomName: string, user: any, socketId: string): Promise<ChatChannelRoomInterface> {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             const userInfo = {
                 socketId,
                 id: user.id,
@@ -30,7 +30,8 @@ export class ChatChannelRoom {
                 avatar: user.avatar, // 头像
                 remarks: user.remarks, // 备注
                 role: user.role,
-                roleName: user.roleName
+                roleName: user.roleName,
+                lastOnline: new Date().getTime()
             };
             for (let i = 0; i < this.roomsState.length; i++) {
                 // 判断该用户是否已经在房间内
@@ -42,18 +43,50 @@ export class ChatChannelRoom {
                     return resolve(this.roomsState[i]);
                 }
             }
+            // 查询频道
+            const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+            // 频道人员
+            const channelPersonnel: ChatChannelRoomUserInterface[] = JSON.parse(channel.personnel);
             // 如果上面的循环走完还没有加入频道 则进入公共闲聊频道
             if (this.roomsState.length > 0) {
                 const findIndex = this.roomsState.findIndex(item => item.roomId === '8808');
+                // console.log('频道人员', channelPersonnel);
+                const isJoin = channelPersonnel.find(item => item.id === user.id);
+                // 如果用户是第一次进入，则添加至公共频道
+                if (!isJoin) {
+                    // 去掉socketId
+                    userInfo.socketId = '';
+                    const personnel = [...channelPersonnel, userInfo];
+                    // 更新频道用户
+                    await channel.update(
+                        {
+                            personnel: JSON.stringify(personnel),
+                        },
+                        {
+                            where: {channelId: '8808'},
+                        }
+                    );
+                }
+                // 补充socketId
+                userInfo.socketId = socketId;
+                const room: ChatChannelRoomInterface = {
+                    roomId: channel.channelId,
+                    roomName: channel.channelName,
+                    announcement: channel.announcement,
+                    personnel: channelPersonnel,
+                    users: [...this.roomsState[findIndex].users, userInfo]
+                };
                 // 加入闲聊频道
                 this.roomsState[findIndex].users.push(userInfo);
                 // 返回加入的房间
-                return resolve(this.roomsState[findIndex]);
+                return resolve(room);
             }
             // 如果没有频道则新增闲聊频道
             const room: ChatChannelRoomInterface = {
                 roomId: '8808',
                 roomName,
+                announcement: '',
+                personnel: channelPersonnel,
                 users: [userInfo]
             };
             // 加入房间
@@ -91,6 +124,8 @@ export class ChatChannelRoom {
                 const room: ChatChannelRoomInterface = {
                     roomId: channel.channelId,
                     roomName: channel.channelName,
+                    announcement: channel.announcement,
+                    personnel: JSON.parse(channel.personnel),
                     users: [userInfo]
                 };
                 // 加入频道
@@ -102,6 +137,8 @@ export class ChatChannelRoom {
                 return {
                     roomId: channel.channelId,
                     roomName: channel.channelName,
+                    announcement: channel.announcement,
+                    personnel: JSON.parse(channel.personnel),
                     users: [userInfo]
                 };
             }
