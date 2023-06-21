@@ -6,7 +6,8 @@ import {ResultListPage} from '../models/class/ResultList';
 import {Token} from '../models/class/token';
 import multer from 'multer';
 import fs from 'fs';
-import {ResultCodeEnum} from "../enum/http.enum";
+import {ResultCodeEnum} from '../enum/http.enum';
+import ChatChannelDatabase from '../models/chat-channel.models';
 
 /**
  * 创建用户
@@ -14,37 +15,55 @@ import {ResultCodeEnum} from "../enum/http.enum";
  * @param res 返回
  */
 const newUser = async (req: Request, res: Response) => {
-    const {name, username, password, role, roleName} = req.body;
-    // 加密密码
-    // const hashPassword = await bcrypt.hash(password, 12);
-    const aesPassword = encipher(password);
-
-    // 验证是否存在相同用户
-    const userRepeat = await User.findOne({where: {name}});
-    const usernameRepeat = await User.findOne({where: {username}});
-    if (userRepeat || usernameRepeat) {
-        return res.json({
-            code: ResultCodeEnum.fail,
-            msg: `用户名或昵称已存在`,
-        });
-    }
-
     try {
+        const {name, username, password, role, roleName} = req.body;
+        // 加密密码
+        // const hashPassword = await bcrypt.hash(password, 12);
+        const aesPassword = encipher(password);
+
+        // 验证是否存在相同用户
+        const userRepeat = await User.findOne({where: {name}});
+        const usernameRepeat = await User.findOne({where: {username}});
+        if (userRepeat || usernameRepeat) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `用户名或昵称已存在`,
+            });
+        }
         // 成功创建用户
-        await User.create({
+        const user: any = await User.create({
             name,
             username,
             password: aesPassword,
             role,
             roleName,
         });
+        // 添加至公共频道
+        const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+        const personnel = [...JSON.parse(channel.personnel), {
+            id: user.dataValues.id,
+            userName: username,
+            avatar: null, // 头像
+            remarks: '', // 备注
+            role: role,
+            roleName: roleName,
+            lastOnline: new Date().getTime()
+        }];
+        await channel.update(
+            {
+                personnel: JSON.stringify(personnel),
+            },
+            {
+                where: {channelId: '8808'},
+            }
+        );
         res.json({
             code: ResultCodeEnum.success,
             msg: `用户 ${username} 创建成功`,
         });
     } catch (error) {
         res.status(400).json({
-            code:ResultCodeEnum.fail,
+            code: ResultCodeEnum.fail,
             msg: `用户创建失败`,
             error,
         });
@@ -167,15 +186,33 @@ const allUser = async (req: Request, res: Response) => {
  * @param res 返回
  */
 const deleteUser = async (req: Request, res: Response) => {
-    const {id} = req.body;
-    const user: any = await User.findOne({where: {id}});
-    if (!user) {
-        return res.json({
-            code: ResultCodeEnum.fail,
-            msg: `用户不存在`,
-        });
-    }
     try {
+        const {id} = req.body;
+        const user: any = await User.findOne({where: {id}});
+        if (!user) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `用户不存在`,
+            });
+        }
+        // 从公共频道删除
+        const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+        const personnel: any[] = JSON.parse(channel.personnel);
+        // 找到索引
+        const findIndex: number | undefined = personnel.findIndex(item => item.id === id);
+        if (findIndex) {
+            // 删除
+            personnel.splice(findIndex, 1);
+            // 更新
+            await channel.update(
+                {
+                    personnel: JSON.stringify(personnel),
+                },
+                {
+                    where: {channelId: '8808'},
+                }
+            );
+        }
         // 成功删除用户
         await user.destroy();
         res.json({
@@ -280,6 +317,29 @@ const updateUser = async (req: Request, res: Response) => {
         });
     }
     const aesPassword = encipher(password);
+    // 从公共频道删除
+    const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+    const personnel: any[] = JSON.parse(channel.personnel);
+    // 找到索引
+    const findIndex: number | undefined = personnel.findIndex(item => item.id === id);
+    if (findIndex) {
+        // 修改信息
+        personnel[findIndex] = {
+            ...personnel[findIndex],
+            avatar, // 头像
+            remarks, // 备注
+            userName: userName, // 昵称
+        };
+        // 更新
+        await channel.update(
+            {
+                personnel: JSON.stringify(personnel),
+            },
+            {
+                where: {channelId: '8808'},
+            }
+        );
+    }
     // 更新
     await user.update(
         {
