@@ -1,4 +1,4 @@
-import {Request, Response} from 'express';
+﻿import {Request, Response} from 'express';
 import User from '../models/user.models';
 import jwt from 'jsonwebtoken';
 import {encipher} from '../util/encipher';
@@ -8,6 +8,7 @@ import multer from 'multer';
 import fs from 'fs';
 import {ResultCodeEnum} from '../enum/http.enum';
 import ChatChannelDatabase from '../models/chat-channel.models';
+import {updateUserInfo} from './socket';
 
 /**
  * 创建用户
@@ -255,8 +256,15 @@ const storage = multer.diskStorage({
 const uploadAvatarMulter = multer({storage: storage});
 const uploadAvatar = async (req: Request, res: Response) => {
     if (req.file) {
-        const {id} = req.body;
+        // 用户ID
+        const id = req.header('userId') as string;
         const user: any = await User.findOne({where: {id}});
+        if (!user) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `用户不存在`,
+            });
+        }
         // 判断是否存在头像
         // console.log(fs.existsSync(user.avatar));
         if (user.avatar && fs.existsSync(user.avatar)) {
@@ -265,6 +273,29 @@ const uploadAvatar = async (req: Request, res: Response) => {
         const pathUrl = `${req.file?.destination}/${req.file?.originalname}`; // 指定文件路径和文件名
         // console.log(pathUrl);
         // console.log(path + req.file?.originalname);
+        // 从公共频道删除
+        const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+        const personnel: any[] = JSON.parse(channel.personnel);
+        // 找到索引
+        const findIndex: number | undefined = personnel.findIndex(item => item.id === +id);
+        if (findIndex >= 0) {
+            // 修改信息
+            personnel[findIndex] = {
+                ...personnel[findIndex],
+                avatar: `${path}/${req.file?.originalname}`, // 头像
+            };
+            // 更新
+            await channel.update(
+                {
+                    personnel: JSON.stringify(personnel),
+                },
+                {
+                    where: {channelId: '8808'},
+                }
+            );
+            // 更新用户信息
+            await updateUserInfo(id, `${path}/${req.file?.originalname}`);
+        }
         // 保存新头像
         await user.update(
             {
@@ -305,7 +336,6 @@ const updateUser = async (req: Request, res: Response) => {
         return res.json({
             code: ResultCodeEnum.fail,
             msg: `用户不存在`,
-            user,
         });
     }
     const userId = req.header('userId');
@@ -313,16 +343,14 @@ const updateUser = async (req: Request, res: Response) => {
         return res.json({
             code: ResultCodeEnum.fail,
             msg: `参数异常`,
-            user,
         });
     }
-    const aesPassword = encipher(password);
     // 从公共频道删除
     const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
     const personnel: any[] = JSON.parse(channel.personnel);
     // 找到索引
     const findIndex: number | undefined = personnel.findIndex(item => item.id === id);
-    if (findIndex) {
+    if (findIndex >= 0) {
         // 修改信息
         personnel[findIndex] = {
             ...personnel[findIndex],
@@ -340,18 +368,35 @@ const updateUser = async (req: Request, res: Response) => {
             }
         );
     }
-    // 更新
-    await user.update(
-        {
-            avatar, // 头像
-            remarks, // 备注
-            username: userName, // 昵称
-            password: aesPassword, // 密码
-        },
-        {
-            where: {id: user.id},
-        }
-    );
+    // 更新用户信息
+    await updateUserInfo(id, avatar, userName, remarks);
+    if (password) {
+        const aesPassword = encipher(password);
+        // 更新
+        await user.update(
+            {
+                avatar, // 头像
+                remarks, // 备注
+                username: userName, // 昵称
+                password: aesPassword, // 密码
+            },
+            {
+                where: {id: user.id},
+            }
+        );
+    } else {
+        // 更新
+        await user.update(
+            {
+                avatar, // 头像
+                remarks, // 备注
+                username: userName, // 昵称
+            },
+            {
+                where: {id: user.id},
+            }
+        );
+    }
     res.json({
         code: ResultCodeEnum.success,
         msg: '修改成功',

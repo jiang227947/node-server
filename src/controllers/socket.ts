@@ -292,4 +292,28 @@ const saveMessage = async (msg: ChatMessagesInterface) => {
     }
 };
 
-export {SocketServer, io};
+/**
+ * 通知房间更新用户信息
+ * @param id 用户id
+ * @param avatar 用户头像
+ * @param userName 昵称
+ * @param remarks 备注
+ */
+const updateUserInfo = async (id: string, avatar: string, userName?: string, remarks?: string) => {
+    try {
+        const parseMessage: any = {
+            systemStates: SystemMessagesEnum.update,
+            id,
+            avatar
+        };
+        if (userName && remarks) {
+            parseMessage.userName = userName;
+            parseMessage.remarks = remarks;
+        }
+        io.to('8808').emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
+    } catch (error) {
+        console.log('更新用户信息失败');
+    }
+};
+
+export {SocketServer, io, updateUserInfo};

@@ -157,7 +157,10 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
             // 判断是新增还是修改
             if (id) {
                 const channel: any = await ChatChannelDatabase.findOne({where: {id}});
-                fs.unlinkSync(channel.avatar); // 删除旧头像
+                // 判断是否存在头像
+                if (fs.existsSync(channel.avatar)) {
+                    fs.unlinkSync(channel.avatar); // 删除旧头像
+                }
                 // 更新新头像
                 await channel.update({avatar: `${path}/${req.file?.originalname}`}, {where: {id}});
             } else {
@@ -279,7 +282,9 @@ const queryChannel = async (req: Request, res: Response) => {
             // 管理员格式转换
             admins: JSON.parse(item.dataValues.admins),
             // 频道人员格式转换
-            personnel: JSON.parse(item.dataValues.personnel)
+            personnel: JSON.parse(item.dataValues.personnel),
+            // 密码删除
+            password: null
         }
     });
     // 返回结构
