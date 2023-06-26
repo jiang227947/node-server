@@ -9,6 +9,7 @@ export interface UserInterface {
     name: string;    // 登录名
     userName: string;    // 用户名
     token: Token;   // token数据
+    username?: string;    // 用户名
     password?: string; // 密码
     role?: UserRoleEnum;    // 角色
     roleName?: string;    // 角色名称

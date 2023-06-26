@@ -1,3 +1,6 @@
+import ChatChannelDatabase from '../models/chat-channel.models';
+import {UserInterface} from '../interface/user';
+
 /**
  * 工具类
  */
@@ -53,5 +56,46 @@ export class CommonUtil {
             }
         }
         return _reaction;
+    }
+
+    /**
+     * 聊天频道新增删除用户
+     * @param channel 频道
+     * @param userInfo 用户信息
+     * @param type 操作类型 add del
+     */
+    public static updateChatChannel(channel: any, userInfo: UserInterface, type: string): Promise<string> {
+        return new Promise<string>(async (resolve, reject) => {
+            try {
+                if (type === 'add') {
+                    // 添加进数组
+                    const personnel = [...JSON.parse(channel.personnel), {
+                        id: userInfo.id,
+                        userName: userInfo.username,
+                        avatar: null, // 头像
+                        remarks: '', // 备注
+                        role: userInfo.role,
+                        roleName: userInfo.roleName,
+                        lastOnline: new Date().getTime()
+                    }];
+                    // 返回结果
+                    resolve(JSON.stringify(personnel));
+                } else {
+                    const personnel: any[] = JSON.parse(channel.personnel);
+                    // 找到索引
+                    const findIndex: number | undefined = personnel.findIndex(item => item.id === +userInfo.id);
+                    if (findIndex >= 0) {
+                        // 删除
+                        personnel.splice(findIndex, 1);
+                        // 返回结果
+                        resolve(JSON.stringify(personnel));
+                    } else {
+                        reject(false);
+                    }
+                }
+            } catch (e) {
+                reject(false);
+            }
+        });
     }
 }

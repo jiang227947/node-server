@@ -39,7 +39,6 @@ const io = new Server(SocketServer, {
 const roomsList: ChatChannelRoomInterface[] = [];
 // 默认频道为8808
 // const CHANNEL_ID: string = '8808';
-// todo：频道后面改成可以自己创建群组
 /**
  * 连接
  */
@@ -66,13 +65,13 @@ io.on('connection', async (socket) => {
             if (channelId !== 'undefined') {
                 // 加入指定的频道
                 room = await new ChatChannelRoom(roomsList).joinRoomToChannel(channelId, user, socket.id);
-            } else {
-                // 加入闲聊频道
-                room = await new ChatChannelRoom(roomsList).joinRoom(`闲聊频道`, user, socket.id);
                 if (!room) {
                     socket.emit(ChatChannelsMessageTypeEnum.systemMessage, {systemStates: null, msg: '不存在该频道'});
                     return;
                 }
+            } else {
+                // 加入闲聊频道
+                room = await new ChatChannelRoom(roomsList).joinRoom(`闲聊频道`, user, socket.id);
             }
             // console.log('房间列表', room, roomsList);
             // 转发给客户端房间信息

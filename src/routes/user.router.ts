@@ -9,7 +9,7 @@ import {
     deleteUser,
     updateUser,
     uploadAvatar,
-    uploadAvatarMulter
+    uploadAvatarMulter, queryUserById
 } from '../controllers/user';
 import validateToken from './validate-token';
 
@@ -21,6 +21,8 @@ UserRouter.post('/api/register', newUser);
 UserRouter.post('/api/login', loginUser);
 // 查询所有用户
 UserRouter.post('/api/getUserList', validateToken, allUser);
+// 根据用户ID查询
+UserRouter.get('/api/queryUserById', validateToken, queryUserById);
 // 删除用户
 UserRouter.post('/api/deleteUser', validateToken, deleteUser);
 // 修改用户

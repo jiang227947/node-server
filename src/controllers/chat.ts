@@ -9,6 +9,7 @@ import ChatChannelDatabase from '../models/chat-channel.models';
 import {Op} from 'sequelize';
 import {v4 as uuidv4} from 'uuid';
 import User from '../models/user.models';
+import {ChatChannelRoomUserInterface} from '../interface/chat-channels';
 
 /**
  * 分页查询聊天记录
@@ -275,6 +276,16 @@ const queryChannel = async (req: Request, res: Response) => {
             },
         },
     });
+    // 更新数据用的
+    /*const channelAll: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+    let channelAllPersonnel: ChatChannelRoomUserInterface[] = JSON.parse(channelAll.personnel);
+    for (let i = 0; i < channelAllPersonnel.length; i++) {
+        const user: any = await User.findOne({where: {id: channelAllPersonnel[i].id}});
+        channelAllPersonnel[i].name = user.name;
+        channelAllPersonnel[i].createdAt = user.createdAt;
+    }
+    console.log(channelAllPersonnel);
+    channelAll.update({personnel: JSON.stringify(channelAllPersonnel)}, {where: {channelId: '8808'}});*/
     // 格式转换
     const result = channel.map((item: any) => {
         return {
@@ -285,7 +296,7 @@ const queryChannel = async (req: Request, res: Response) => {
             personnel: JSON.parse(item.dataValues.personnel),
             // 密码删除
             password: null
-        }
+        };
     });
     // 返回结构
     res.json({
