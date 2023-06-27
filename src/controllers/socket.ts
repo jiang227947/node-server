@@ -281,8 +281,10 @@ const saveMessage = async (msg: ChatMessagesInterface) => {
     try {
         const massage = {
             ...msg,
+            // 附件转换为字符串
+            attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
             // 作者转换为字符串
-            author: msg.author = JSON.stringify(msg.author),
+            author: JSON.stringify(msg.author),
             timestamp: msg.timestamp = new Date().toISOString()
         };
         await ChatDatabase.create(massage);

@@ -99,13 +99,13 @@ const loginUser = async (req: Request, res: Response) => {
     // 加密jwt
     const aesToken: string = encipher(token);
     // 加密cookie
-    const cookie: string = encipher({
-        userId: user.id,
-        time: new Date().getTime(),
-    });
+    // const cookie: string = encipher({
+    //     userId: user.id,
+    //     time: new Date().getTime(),
+    // });
     const tokenInfo: Token = new Token('authorization', aesToken, user.id, 21600000);
     // 设置cookie
-    res.setHeader('Set-Cookie', cookie);
+    // res.setHeader('Set-Cookie', cookie);
     // 返回结构
     res.status(200).json({
         code: ResultCodeEnum.success,

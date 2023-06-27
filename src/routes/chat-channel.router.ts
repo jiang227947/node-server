@@ -1,9 +1,10 @@
-import {Router} from "express";
-import validateToken from "./validate-token";
+import {Router} from 'express';
+import validateToken from './validate-token';
 import {
+    attachmentsUpload,
     createChannel,
     deleteChannel, joinChannel,
-    queryChannel,
+    queryChannel, uploadAttachmentsMulter,
     uploadChannelAvatar,
     uploadChannelAvatarMulter
 } from '../controllers/chat';
@@ -20,4 +21,7 @@ ChatChannelRouter.get('/api/queryChannel', validateToken, queryChannel);
 ChatChannelRouter.post('/api/deleteChannel', validateToken, deleteChannel);
 // 加入频道
 ChatChannelRouter.post('/api/joinChannel', validateToken, joinChannel);
+// 上传附件
+ChatChannelRouter.post('/api/attachmentsUpload', validateToken, uploadAttachmentsMulter.single('file'), attachmentsUpload);
+
 export default ChatChannelRouter;

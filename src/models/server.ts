@@ -6,15 +6,15 @@ import UserRouter from '../routes/user.router';
 import FileOperation from '../routes/file.router';
 import LeaveMessageRouter from '../routes/leave-message.router';
 import ChatMessageRouter from '../routes/chat.router';
-import Oauth2Router from "../routes/oauth2.router";
-import ChatChannelRouter from "../routes/chat-channel.router";
+import Oauth2Router from '../routes/oauth2.router';
+import ChatChannelRouter from '../routes/chat-channel.router';
 // Models
 import User from './user.models';
 import Filedb from './file.models';
 import LeaveMessage from './leave-message.models';
 import Visitor from './visitor.models';
 import ChatDatabase from './chat.models';
-import ChatChannelDatabase from "./chat-channel.models";
+import ChatChannelDatabase from './chat-channel.models';
 
 class Servers {
     private app: Application;
@@ -95,8 +95,10 @@ class Servers {
                 },
             })
         );
-        // 头像文件静态资源托管
+        // 头像文件静态资源托管，这样才能在浏览器上直接访问预览图片
         this.app.use('/data/avatar', express.static('/data/avatar'));
+        // 附件文件静态资源托管
+        this.app.use('/data/channel/attachments', express.static('/data/channel/attachments'));
     }
 
     /**

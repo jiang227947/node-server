@@ -127,7 +127,7 @@ const addReaction = async (req: Request, res: Response) => {
     }
 };
 
-// 路径
+// 头像路径
 const path = '/data/avatar/channel';
 const storage = multer.diskStorage({
     // 文件上传的地址
@@ -150,6 +150,8 @@ const uploadChannelAvatarMulter = multer({storage: storage});
 
 /**
  * 上传频道头像
+ * @param req
+ * @param res
  */
 const uploadChannelAvatar = async (req: Request, res: Response) => {
     try {
@@ -173,13 +175,16 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
                 });
             }
         } else {
-            res.status(400).json({
+            res.json({
                 code: ResultCodeEnum.fail,
                 msg: `上传失败`,
             });
         }
     } catch (e) {
-
+        res.status(400).json({
+            code: ResultCodeEnum.fail,
+            msg: `上传失败`,
+        });
     }
 };
 
@@ -316,6 +321,8 @@ const queryChannel = async (req: Request, res: Response) => {
 
 /**
  * 删除频道
+ * @param req
+ * @param res
  */
 const deleteChannel = async (req: Request, res: Response) => {
     try {
@@ -345,6 +352,8 @@ const deleteChannel = async (req: Request, res: Response) => {
 
 /**
  * 加入频道
+ * @param req
+ * @param res
  */
 const joinChannel = async (req: Request, res: Response) => {
     try {
@@ -409,6 +418,55 @@ const joinChannel = async (req: Request, res: Response) => {
     }
 };
 
+
+/**
+ * 附件上传
+ * @param req
+ * @param res
+ */
+// 附件路径
+const attachmentsPath = '/data/channel/attachments';
+const attachmentsStorage = multer.diskStorage({
+    // 文件上传的地址
+    destination: (req, file, callback) => {
+        //判断目录是否存在，没有则创建
+        if (!fs.existsSync(attachmentsPath)) {
+            fs.mkdirSync(attachmentsPath, {
+                recursive: true,
+            });
+        }
+        callback(null, attachmentsPath);
+    },
+    // 文件名称
+    filename: (req, file, callback) => {
+        file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        callback(null, file.originalname);
+    },
+});
+const uploadAttachmentsMulter = multer({storage: attachmentsStorage});
+const attachmentsUpload = async (req: Request, res: Response) => {
+    try {
+        if (req.file) {
+            // 返回附件路径
+            res.json({
+                code: ResultCodeEnum.success,
+                msg: `上传成功`,
+                data: `${req.file?.destination}/${req.file?.originalname}`, // 复制URL链接直接浏览器可以访问
+            });
+        } else {
+            res.json({
+                code: ResultCodeEnum.fail,
+                msg: `上传失败`,
+            });
+        }
+    } catch (e) {
+        res.status(400).json({
+            code: ResultCodeEnum.fail,
+            msg: `上传失败`,
+        });
+    }
+};
+
 /**
  * completions
  * https://stream.api2d.net/v1/chat/completions
@@ -463,5 +521,7 @@ export {
     createChannel,
     queryChannel,
     deleteChannel,
-    joinChannel
+    joinChannel,
+    uploadAttachmentsMulter,
+    attachmentsUpload
 };
