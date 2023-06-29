@@ -274,7 +274,6 @@ io.on('connection', async (socket) => {
 
 /**
  * 保存聊天消息
- * 每50条保存一次
  * @constructor
  */
 const saveMessage = async (msg: ChatMessagesInterface) => {
