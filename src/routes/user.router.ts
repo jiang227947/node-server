@@ -3,20 +3,22 @@
  */
 import {Router} from 'express';
 import {
-    newUser,
+    register,
     loginUser,
     allUser,
     deleteUser,
     updateUser,
     uploadAvatar,
-    uploadAvatarMulter, queryUserById
+    uploadAvatarMulter, queryUserById, sendEmail
 } from '../controllers/user';
 import validateToken from './validate-token';
 
 const UserRouter = Router();
 
 // 注册新用户
-UserRouter.post('/api/register', newUser);
+UserRouter.post('/api/register', register);
+// 发送邮件
+UserRouter.post('/api/sendEmail', sendEmail);
 // 登录
 UserRouter.post('/api/login', loginUser);
 // 查询所有用户
@@ -29,5 +31,6 @@ UserRouter.post('/api/deleteUser', validateToken, deleteUser);
 UserRouter.post('/api/updateUser', validateToken, updateUser);
 // 上传头像
 UserRouter.post('/api/uploadAvatar', validateToken, uploadAvatarMulter.single('avatar'), uploadAvatar);
+
 
 export default UserRouter;

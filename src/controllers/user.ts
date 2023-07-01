@@ -10,35 +10,55 @@ import {ResultCodeEnum} from '../enum/http.enum';
 import ChatChannelDatabase from '../models/chat-channel.models';
 import {updateUserInfo} from './socket';
 import {CommonUtil} from '../util/common-util';
+import MailService, {verifyEmail} from '../service/mailService';
+import {Redis} from "../db/redis";
+import {UserRoleEnum} from "../enum/user.enum";
 
 /**
  * 创建用户
  * @param req 参数
  * @param res 返回
  */
-const newUser = async (req: Request, res: Response) => {
+const register = async (req: Request, res: Response) => {
     try {
-        const {name, username, password, role, roleName} = req.body;
+        const {name, userName, email, code, password} = req.body;
         // 加密密码
         // const hashPassword = await bcrypt.hash(password, 12);
         const aesPassword = encipher(password);
 
         // 验证是否存在相同用户
         const userRepeat = await User.findOne({where: {name}});
-        const usernameRepeat = await User.findOne({where: {username}});
-        if (userRepeat || usernameRepeat) {
+        if (userRepeat) {
             return res.json({
                 code: ResultCodeEnum.fail,
-                msg: `用户名或昵称已存在`,
+                msg: `用户名已存在`,
+            });
+        }
+        const redis = new Redis();
+        // 获取存的email验证码
+        const redisEmail = await redis.get(email);
+        if (!redisEmail) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `验证码已过期`,
+            });
+        }
+        const verifyCode = JSON.parse(redisEmail).verifyCode;
+        // 判断是否有效
+        if (verifyCode && verifyCode !== code) {
+            return res.json({
+                code: ResultCodeEnum.fail,
+                msg: `验证码错误`,
             });
         }
         // 成功创建用户
         const user: any = await User.create({
             name,
-            username,
+            username: userName,
             password: aesPassword,
-            role,
-            roleName,
+            email,
+            role: UserRoleEnum.general,
+            roleName: '普通用户',
         });
         const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
         // 添加至公共频道
@@ -47,13 +67,74 @@ const newUser = async (req: Request, res: Response) => {
         });
         res.json({
             code: ResultCodeEnum.success,
-            msg: `用户 ${username} 创建成功`,
+            msg: `用户 ${userName} 创建成功`,
         });
     } catch (error) {
+        console.log(error);
         res.status(400).json({
             code: ResultCodeEnum.fail,
             msg: `用户创建失败`,
             error,
+        });
+    }
+};
+
+/**
+ * 发送邮件
+ * @param req
+ * @param res
+ */
+const sendEmail = async (req: Request, res: Response) => {
+    try {
+        // 实例化
+        const mailService = MailService.getInstance();
+        const transporter = mailService.getTransporter();
+        if (!transporter) {
+            await mailService.createConnection();
+        }
+        let code: string = '';
+        // 创建随机验证码
+        const generateOtp = (len: number) => {
+            const digits = '0123456789';
+            for (let i = 0; i < len; i++) {
+                code += digits[Math.floor(Math.random() * 10)];
+            }
+            return code;
+        };
+        // 6位数验证码
+        const verifyCode: string = generateOtp(6);
+        // 返回邮件内容
+        const emailTemplate = verifyEmail(verifyCode);
+        // 获取收件箱
+        const toEmail = req.body.email;
+        const userLst: any = await User.findAll();
+        for (let i = 0; i < userLst.length; i++) {
+            if (userLst[i].email === toEmail) {
+                return res.json({
+                    code: ResultCodeEnum.fail,
+                    msg: `该邮箱已经被注册`,
+                });
+            }
+        }
+        const redis = new Redis();
+        // 设置验证码 过期时间10分钟
+        await redis.set(toEmail, {toEmail, verifyCode}, 600);
+        // 发送邮件
+        await mailService.sendMail(toEmail, {
+            from: process.env.SMTP_USERNAME,
+            to: toEmail,
+            subject: '[EVZIYI] 验证码 Verification',
+            html: emailTemplate.html,
+        });
+        res.json({
+            code: ResultCodeEnum.success,
+            msg: `邮件发送成功`,
+        });
+    } catch (e) {
+        console.log(e);
+        res.json({
+            code: ResultCodeEnum.fail,
+            msg: `邮件发送失败`,
         });
     }
 };
@@ -64,13 +145,13 @@ const newUser = async (req: Request, res: Response) => {
  * @param res 返回
  */
 const loginUser = async (req: Request, res: Response) => {
-    const {username, password} = req.body;
+    const {userName, password} = req.body;
     /**
      * 1. 验证是否存在该用户
      * 2. 验证密码是否正确
      * 3. 生成令牌 登录成功
      */
-    const user: any = await User.findOne({where: {name: username}});
+    const user: any = await User.findOne({where: {name: userName}});
     if (!user) {
         return res.json({
             code: ResultCodeEnum.fail,
@@ -412,13 +493,15 @@ const updateUser = async (req: Request, res: Response) => {
         msg: '修改成功',
     });
 };
+
 export {
-    newUser,
+    register,
     loginUser,
     allUser,
     queryUserById,
     deleteUser,
     updateUser,
     uploadAvatarMulter,
-    uploadAvatar
+    uploadAvatar,
+    sendEmail
 };

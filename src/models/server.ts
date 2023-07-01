@@ -15,6 +15,7 @@ import LeaveMessage from './leave-message.models';
 import Visitor from './visitor.models';
 import ChatDatabase from './chat.models';
 import ChatChannelDatabase from './chat-channel.models';
+import {Redis} from "../db/redis";
 
 class Servers {
     private app: Application;
@@ -30,13 +31,14 @@ class Servers {
         // 默认启动
         this.listen();
         try {
-            // 创建数据库
-            this.dbConnect().then(() => {
-                // json数据
-                this.midlewares();
-                // 添加路由接口
-                this.routes();
-            });
+            // 连接Redis和创建数据库
+            new Redis().connect().then(() =>
+                this.dbConnect().then(() => {
+                    // json数据
+                    this.midlewares();
+                    // 添加路由接口
+                    this.routes();
+                }));
         } catch (e) {
             console.error('连接数据库失败');
         }

@@ -24,6 +24,11 @@ const User = sequelize.define('user', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    // 邮箱
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
     // 头像
     avatar: {
         type: DataTypes.STRING,
