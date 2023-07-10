@@ -64,7 +64,7 @@ const register = async (req: Request, res: Response) => {
         });
         const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
         // 添加至公共频道
-        CommonUtil.updateChatChannel(channel, user, 'add').then((personnel: string | boolean) => {
+        await CommonUtil.updateChatChannel(channel, user, 'add').then((personnel: string | boolean) => {
             if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
         });
         res.json({
@@ -297,7 +297,7 @@ const deleteUser = async (req: Request, res: Response) => {
         }
         const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
         // 从公共频道删除
-        CommonUtil.updateChatChannel(channel, user, 'del').then((personnel: string | boolean) => {
+        await CommonUtil.updateChatChannel(channel, user, 'del').then((personnel: string | boolean) => {
             if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
         }).catch((e: any) => {
             console.log(e);

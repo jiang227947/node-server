@@ -370,7 +370,7 @@ const qqOauth = async (req: Request, res: Response) => {
                     });
                     const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
                     // 添加至公共频道
-                    CommonUtil.updateChatChannel(channel, newUser, 'add').then((personnel: string | boolean) => {
+                    await CommonUtil.updateChatChannel(channel, newUser, 'add').then((personnel: string | boolean) => {
                         if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
                     });
                     // 生成token令牌
