@@ -11,6 +11,7 @@ export interface UserInterface {
     token: Token;   // token数据
     username?: string;    // 用户名
     password?: string; // 密码
+    email?: string; // 邮箱
     role?: UserRoleEnum;    // 角色
     roleName?: string;    // 角色名称
     avatar?: string;    // 头像路径

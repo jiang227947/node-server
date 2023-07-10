@@ -297,9 +297,10 @@ const saveMessage = async (msg: ChatMessagesInterface) => {
  * @param id 用户id
  * @param avatar 用户头像
  * @param userName 昵称
+ * @param email 邮箱
  * @param remarks 备注
  */
-const updateUserInfo = async (id: string, avatar: string, userName?: string, remarks?: string) => {
+const updateUserInfo = async (id: string, avatar: string, userName?: string, email?: string, remarks?: string) => {
     try {
         const parseMessage: any = {
             systemStates: SystemMessagesEnum.update,

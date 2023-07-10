@@ -11,8 +11,8 @@ import ChatChannelDatabase from '../models/chat-channel.models';
 import {updateUserInfo} from './socket';
 import {CommonUtil} from '../util/common-util';
 import MailService, {verifyEmail} from '../service/mailService';
-import {Redis} from "../db/redis";
-import {UserRoleEnum} from "../enum/user.enum";
+import {Redis} from '../db/redis';
+import {UserRoleEnum} from '../enum/user.enum';
 
 /**
  * 创建用户
@@ -37,14 +37,16 @@ const register = async (req: Request, res: Response) => {
         const redis = new Redis();
         // 获取存的email验证码
         const redisEmail = await redis.get(email);
+        // 判断验证码是否有效
         if (!redisEmail) {
             return res.json({
                 code: ResultCodeEnum.fail,
                 msg: `验证码已过期`,
             });
         }
+        // 获取格式
         const verifyCode = JSON.parse(redisEmail).verifyCode;
-        // 判断是否有效
+        // 判断是否正确
         if (verifyCode && verifyCode !== code) {
             return res.json({
                 code: ResultCodeEnum.fail,
@@ -297,6 +299,8 @@ const deleteUser = async (req: Request, res: Response) => {
         // 从公共频道删除
         CommonUtil.updateChatChannel(channel, user, 'del').then((personnel: string | boolean) => {
             if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
+        }).catch((e: any) => {
+            console.log(e);
         });
         // 成功删除用户
         await user.destroy();
@@ -408,7 +412,7 @@ const uploadAvatar = async (req: Request, res: Response) => {
  * @param res 返回
  */
 const updateUser = async (req: Request, res: Response) => {
-    const {id, avatar, userName, remarks, password} = req.body;
+    const {id, avatar, userName, email, remarks, password} = req.body;
     if (!id) {
         return res.json({
             code: ResultCodeEnum.fail,
@@ -446,6 +450,7 @@ const updateUser = async (req: Request, res: Response) => {
         personnel[findIndex] = {
             ...personnel[findIndex],
             avatar, // 头像
+            email, // 邮箱
             remarks, // 备注
             userName: userName, // 昵称
         };
@@ -460,7 +465,7 @@ const updateUser = async (req: Request, res: Response) => {
         );
     }
     // 通知房间更新用户信息
-    await updateUserInfo(id, avatar, userName, remarks);
+    await updateUserInfo(id, avatar, userName, email, remarks);
     if (password) {
         const aesPassword = encipher(password);
         // 更新
@@ -468,6 +473,7 @@ const updateUser = async (req: Request, res: Response) => {
             {
                 avatar, // 头像
                 remarks, // 备注
+                email, // 邮箱
                 username: userName, // 昵称
                 password: aesPassword, // 密码
             },
@@ -481,6 +487,7 @@ const updateUser = async (req: Request, res: Response) => {
             {
                 avatar, // 头像
                 remarks, // 备注
+                email, // 邮箱
                 username: userName, // 昵称
             },
             {

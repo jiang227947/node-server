@@ -13,6 +13,8 @@ import {
     QQOpenIDOAuthResponse, QQUserInfoInterface
 } from "../interface/oauth2";
 import {ResultCodeEnum} from "../enum/http.enum";
+import ChatChannelDatabase from '../models/chat-channel.models';
+import {CommonUtil} from '../util/common-util';
 
 /**
  * 根据需要登录的环境生成uuid用来校验
@@ -91,7 +93,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
              * 获取用户信息
              */
             // 中间请求需要return Promise
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 axios.get(`https://api.github.com/user`, {
                     data: undefined, string: undefined,
                     headers: {
@@ -111,7 +113,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
              * 获取emails信息
              */
             // 中间请求需要return Promise
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 axios.get(`https://api.github.com/user/emails`, {
                     data: undefined, string: undefined,
                     headers: {
@@ -130,15 +132,18 @@ const githubAccessToken = async (req: Request, res: Response) => {
             // 查询是否存在该用户
             const user: any = await User.findOne({where: {id: userInfo.data.id}});
             if (!user) {
-                // 将用户信息和邮箱信息保存到数据库中
+                // 将用户信息保存到数据库中
                 try {
+                    // 生成uuid
+                    const uuid = uuidv4();
                     // 成功创建用户
                     await User.create({
                         name: userInfo.data.login,
                         username: userInfo.data.name,
                         avatar: userInfo.data.avatar_url, // 头像
-                        remarks: userEmails.data[0].email, // 备注
-                        password: 0,
+                        email: userEmails.data[0].email, // 邮箱
+                        remarks: '', // 备注
+                        password: uuid,
                         role: UserRoleEnum.github,
                         roleName: 'Github用户'
                     });
@@ -164,6 +169,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
                             userName: userInfo.data.name, // 登录名
                             name: userInfo.data.login, // 昵称
                             remarks: userEmails.data[0].email, // 备注
+                            email: userEmails.data[0].email, // 邮箱
                             avatar: userInfo.data.avatar_url, // 头像
                             role: UserRoleEnum.github, // 角色
                             roleName: 'Github用户', // 角色名称
@@ -178,15 +184,6 @@ const githubAccessToken = async (req: Request, res: Response) => {
                     console.log('用户创建失败');
                 }
             } else {
-                // 更新登录时间
-                await user.update(
-                    {
-                        lastLoginTime: new Date().getTime(),
-                    },
-                    {
-                        where: {id: user.id},
-                    }
-                );
                 // 生成token令牌
                 const token = jwt.sign(
                     {name: user.username, id: user.id},
@@ -219,7 +216,18 @@ const githubAccessToken = async (req: Request, res: Response) => {
                 const callbackParams: string = encipher(params);
                 // 验证成功，跳转到首页
                 res.redirect(`/login/auth?${callbackParams}`);
+                // 更新登录时间
+                await user.update(
+                    {
+                        lastLoginTime: new Date().getTime(),
+                    },
+                    {
+                        where: {id: user.id},
+                    }
+                );
             }
+        }).catch(() => {
+            console.log('github失败');
         });
     } catch (error) {
         console.log('catch', error);
@@ -244,6 +252,8 @@ const qqOauth = async (req: Request, res: Response) => {
     let access_token = '';
     // 用户唯一ID信息
     let openID: QQOpenIDOAuthResponse;
+    // 用户唯一ID
+    let openid: number;
     // 用户信息
     let userInfo: QQUserInfoInterface;
     // 错误信息
@@ -292,7 +302,7 @@ const qqOauth = async (req: Request, res: Response) => {
              * fmt    可选    因历史原因，默认是jsonpb格式，如果填写json，则返回json格式
              */
             // 中间请求需要return Promise
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 axios.get(`https://graph.qq.com/oauth2.0/me`, {
                     params: {
                         access_token: access_token,
@@ -300,6 +310,8 @@ const qqOauth = async (req: Request, res: Response) => {
                     }
                 }).then((res: AxiosResponse<QQOpenIDOAuthResponse>) => {
                     openID = res.data;
+                    const idList: string[] = openID.openid.match(/\d+/g) as string[];
+                    openid = +(idList.join('')).slice(0, 6);
                     // {"client_id":"102050313","openid":"ACFBD42D56ED****7EBB8F61B9DB2E"}
                     resolve(res.data);
                 }).catch(() => {
@@ -337,22 +349,30 @@ const qqOauth = async (req: Request, res: Response) => {
             });
         }).then(async () => {
             // 查询是否存在该用户
-            const user: any = await User.findOne({where: {name: userInfo.nickname}});
+            const user: any = await User.findOne({where: {id: openid}});
             if (!user) {
-                // 将用户信息和邮箱信息保存到数据库中
+                // 将用户信息保存到数据库中
                 try {
+                    // 生成uuid
+                    const uuid = uuidv4();
                     // 成功创建用户
-                    await User.create({
+                    const newUser: any = await User.create({
+                        // openid对应每一个QQ号，唯一
+                        id: openid,
                         name: userInfo.nickname,
                         username: userInfo.nickname,
                         avatar: userInfo.figureurl_qq_1, // 头像
-                        remarks: 'QQ 用户', // 备注
-                        password: 0,
+                        email: '', // 邮箱
+                        remarks: '', // 备注
+                        password: uuid,
                         role: UserRoleEnum.qq,
                         roleName: 'QQ用户'
                     });
-                    const newUser: any = await User.findOne({where: {name: userInfo.nickname}});
-                    console.log('newUser', newUser);
+                    const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+                    // 添加至公共频道
+                    CommonUtil.updateChatChannel(channel, newUser, 'add').then((personnel: string | boolean) => {
+                        if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
+                    });
                     // 生成token令牌
                     const token = jwt.sign(
                         {name: userInfo.nickname, id: newUser.id},
@@ -375,7 +395,8 @@ const qqOauth = async (req: Request, res: Response) => {
                             id: newUser.id,
                             userName: userInfo.nickname, // 登录名
                             name: userInfo.nickname, // 昵称
-                            remarks: 'QQ用户', // 备注
+                            remarks: '', // 备注
+                            email: '', // 邮箱
                             avatar: userInfo.figureurl_qq_1, // 头像
                             role: UserRoleEnum.qq, // 角色
                             roleName: 'QQ用户', // 角色名称
@@ -385,20 +406,20 @@ const qqOauth = async (req: Request, res: Response) => {
                     const callbackParams: string = encipher(params);
                     // 跳转到首页
                     res.redirect(`/login/auth?${callbackParams}`);
+                    // 更新登录时间
+                    await user.update(
+                        {
+                            lastLoginTime: new Date().getTime(),
+                        },
+                        {
+                            where: {id: user.id},
+                        }
+                    );
                 } catch (e) {
                     // 用户创建失败
-                    console.log('用户创建失败');
+                    console.log('用户创建失败', e);
                 }
             } else {
-                // 更新登录时间
-                await user.update(
-                    {
-                        lastLoginTime: new Date().getTime(),
-                    },
-                    {
-                        where: {id: user.id},
-                    }
-                );
                 // 生成token令牌
                 const token = jwt.sign(
                     {name: user.username, id: user.id},
@@ -422,6 +443,7 @@ const qqOauth = async (req: Request, res: Response) => {
                         userName: user.username, // 登录名
                         name: user.name, // 昵称
                         remarks: user.remarks, // 备注
+                        email: user.email, // 邮箱
                         avatar: user.avatar, // 头像
                         role: user.role, // 角色
                         roleName: user.roleName, // 角色名称
@@ -432,7 +454,18 @@ const qqOauth = async (req: Request, res: Response) => {
                 const callbackParams: string = encipher(params);
                 // 验证成功，跳转到首页
                 res.redirect(`/login/auth?${callbackParams}`);
+                // 更新登录时间
+                await user.update(
+                    {
+                        lastLoginTime: new Date().getTime(),
+                    },
+                    {
+                        where: {id: user.id},
+                    }
+                );
             }
+        }).catch(() => {
+            console.log('QQ失败');
         });
     } catch (e) {
         res.json({
