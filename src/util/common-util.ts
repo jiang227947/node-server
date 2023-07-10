@@ -1,4 +1,3 @@
-import ChatChannelDatabase from '../models/chat-channel.models';
 import {UserInterface} from '../interface/user';
 
 /**
@@ -72,8 +71,9 @@ export class CommonUtil {
                     const personnel = [...JSON.parse(channel.personnel), {
                         id: userInfo.id,
                         userName: userInfo.username,
-                        avatar: null, // 头像
-                        remarks: '', // 备注
+                        avatar: userInfo.avatar, // 头像
+                        email: userInfo.email, // 邮箱
+                        remarks: userInfo.remarks, // 备注
                         role: userInfo.role,
                         roleName: userInfo.roleName,
                         lastOnline: new Date().getTime()

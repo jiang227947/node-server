@@ -9,7 +9,6 @@ import ChatChannelDatabase from '../models/chat-channel.models';
 import {Op} from 'sequelize';
 import {v4 as uuidv4} from 'uuid';
 import User from '../models/user.models';
-import {ChatChannelRoomUserInterface} from '../interface/chat-channels';
 
 /**
  * 分页查询聊天记录
@@ -118,7 +117,7 @@ const addReaction = async (req: Request, res: Response) => {
             });
         }
     } catch (e) {
-        console.log('添加反应表情失败');
+        console.log('添加反应表情失败', e);
         // 返回结构
         res.status(400).json({
             code: ResultCodeEnum.fail,
