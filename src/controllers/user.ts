@@ -434,8 +434,8 @@ const updateUser = async (req: Request, res: Response) => {
         });
     }
     // 验证是否存在相同用户昵称
-    const usernameRepeat = await User.findOne({where: {username: userName}});
-    if (usernameRepeat) {
+    const usernameRepeat: any = await User.findOne({where: {username: userName}});
+    if (usernameRepeat && usernameRepeat.id !== id) {
         return res.json({
             code: ResultCodeEnum.fail,
             msg: `昵称已存在`,

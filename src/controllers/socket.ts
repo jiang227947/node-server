@@ -282,6 +282,8 @@ const saveMessage = async (msg: ChatMessagesInterface) => {
             ...msg,
             // 附件转换为字符串
             attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
+            // 引用消息转换为字符串
+            message_reference: msg.message_reference ? JSON.stringify(msg.message_reference) : null,
             // 作者转换为字符串
             author: JSON.stringify(msg.author),
             timestamp: msg.timestamp = new Date().toISOString()
@@ -307,8 +309,9 @@ const updateUserInfo = async (id: string, avatar: string, userName?: string, ema
             id,
             avatar
         };
-        if (userName && remarks) {
+        if (userName) {
             parseMessage.userName = userName;
+            parseMessage.email = email;
             parseMessage.remarks = remarks;
         }
         io.to('8808').emit(ChatChannelsMessageTypeEnum.systemMessage, parseMessage);
