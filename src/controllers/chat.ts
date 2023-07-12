@@ -61,6 +61,7 @@ const queryChatMessage = async (req: Request, res: Response) => {
                 ...item.dataValues,
                 author: JSON.parse(item.dataValues.author as string),
                 reaction: JSON.parse(item.dataValues.reaction as string),
+                messageReference: JSON.parse(item.dataValues.messageReference as string),
             };
         });
         const data = new ResultListPage(

@@ -31,9 +31,9 @@ const io = new Server(SocketServer, {
         skipMiddlewares: true,
     },
     // 发送新的ping packet（30000）之前有多少ms
-    pingInterval: 30000,
+    pingInterval: 60000,
     // 有多少ms没有传递消息则考虑连接close（5000）
-    pingTimeout: 5000,
+    pingTimeout: 10000,
 });
 // 用于保存有关创建的每个房间 ID 和该房间中的用户数量的信息
 const roomsList: ChatChannelRoomInterface[] = [];
@@ -283,7 +283,7 @@ const saveMessage = async (msg: ChatMessagesInterface) => {
             // 附件转换为字符串
             attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
             // 引用消息转换为字符串
-            message_reference: msg.message_reference ? JSON.stringify(msg.message_reference) : null,
+            messageReference: msg.messageReference ? JSON.stringify(msg.messageReference) : null,
             // 作者转换为字符串
             author: JSON.stringify(msg.author),
             timestamp: msg.timestamp = new Date().toISOString()

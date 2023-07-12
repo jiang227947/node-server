@@ -95,9 +95,9 @@ export interface ChatMessagesInterface {
     // 提及的人名称信息
     mentions: any[];
     // 留言参考
-    message_reference: any[];
+    messageReference: any;
     // 参考消息
-    referenced_message: any[];
+    referencedMessage: any[];
     // 固定
     pinned: boolean;
     // 时间
