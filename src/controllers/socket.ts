@@ -44,11 +44,11 @@ const roomsList: ChatChannelRoomInterface[] = [];
  */
 io.on('connection', async (socket) => {
     // console.log('socket.recovered', socket.recovered);
-    if (socket.recovered) {
+    /*if (socket.recovered) {
         // recovery was successful: socket.id, socket.rooms and socket.data were restored
     } else {
         // new or unrecoverable session
-    }
+    }*/
     // token
     const token: string | any = socket.handshake.headers.token;
     if (token) {
@@ -104,15 +104,21 @@ io.on('connection', async (socket) => {
     socket.on(ChatChannelsMessageTypeEnum.publicMessage, (parseMessage: ChatMessagesInterface, callback) => {
         try {
             // console.log('公共频道消息', parseMessage);
-            // 转发给公共频道
-            // socket.emit(ChatChannelsMessageTypeEnum.publicMessage, {type: 'public', parseMessage});
-            // 系统消息 发送给room房间
-            socket.to(parseMessage.channelId).emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
             // 保存记录
-            saveMessage(parseMessage);
-            // 接收消息成功回调
-            callback({
-                status: ChatChannelsCallbackEnum.ok
+            saveMessage(parseMessage).then((id: string) => {
+                // 赋值ID
+                parseMessage.id = +id;
+                // 转发给公共频道
+                socket.to(parseMessage.channelId).emit(ChatChannelsMessageTypeEnum.publicMessage, parseMessage);
+                // 接收消息成功回调
+                callback({
+                    status: ChatChannelsCallbackEnum.ok
+                });
+            }).catch(() => {
+                // 接收消息失败回调
+                callback({
+                    status: ChatChannelsCallbackEnum.error
+                });
             });
         } catch (e) {
             // 接收消息失败回调
@@ -128,14 +134,21 @@ io.on('connection', async (socket) => {
      */
     socket.on(ChatChannelsMessageTypeEnum.roomMessage, (parseMessage: ChatMessagesInterface, callback) => {
         try {
-            console.log('房间消息', parseMessage);
-            // 发送给room房间
-            socket.to(parseMessage.channelId).emit(ChatChannelsMessageTypeEnum.roomMessage, parseMessage);
+            // console.log('房间消息', parseMessage);
             // 保存记录
-            saveMessage(parseMessage);
-            // 接收消息成功回调
-            callback({
-                status: ChatChannelsCallbackEnum.ok
+            saveMessage(parseMessage).then((id) => {
+                parseMessage.id = +id;
+                // 发送给room房间
+                socket.to(parseMessage.channelId).emit(ChatChannelsMessageTypeEnum.roomMessage, parseMessage);
+                // 接收消息成功回调
+                callback({
+                    status: ChatChannelsCallbackEnum.ok
+                });
+            }).catch(() => {
+                // 接收消息失败回调
+                callback({
+                    status: ChatChannelsCallbackEnum.error
+                });
             });
         } catch (e) {
             // 接收消息失败回调
@@ -288,7 +301,9 @@ const saveMessage = async (msg: ChatMessagesInterface) => {
             author: JSON.stringify(msg.author),
             timestamp: msg.timestamp = new Date().toISOString()
         };
-        await ChatDatabase.create(massage);
+        const create: any = await ChatDatabase.create(massage);
+        // 返回消息ID
+        return create.id;
     } catch (error) {
         console.log('保存失败');
     }
