@@ -1,4 +1,5 @@
 import {UserInterface} from "./user";
+import {WxErrCodeEnum} from "../enum/error.enum";
 
 /**
  * 第三方登录返回数据接口
@@ -124,4 +125,20 @@ export interface QQUserInfoInterface {
     year: string;
     // 星座
     constellation: string;
+}
+
+/**
+ * 微信用户登录凭证校验结果
+ */
+export interface WxAuthResponse {
+    // 会话密钥
+    session_key: string;
+    // 用户在开放平台的唯一标识符，若当前小程序已绑定到微信开放平台账号下会返回，详见 UnionID 机制说明
+    unionid: string;
+    // 错误信息
+    errmsg: string;
+    // 用户唯一标识
+    openid: string;
+    // 错误码
+    errcode: WxErrCodeEnum;
 }

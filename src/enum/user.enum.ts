@@ -10,4 +10,6 @@ export enum UserRoleEnum {
     github = '2001',
     // github用户
     qq = '2002',
+    // 小程序用户
+    mobile = '2003',
 }

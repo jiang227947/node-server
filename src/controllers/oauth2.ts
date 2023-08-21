@@ -1,5 +1,5 @@
 import {Request, Response} from "express";
-import {AxiosResponse} from "axios";
+import axios, {AxiosResponse} from "axios";
 import User from "../models/user.models";
 import {UserRoleEnum} from "../enum/user.enum";
 import jwt from "jsonwebtoken";
@@ -10,7 +10,7 @@ import {
     GithubAccessTokenResponse,
     GithubUserInterface,
     OauthInterface,
-    QQOpenIDOAuthResponse, QQUserInfoInterface
+    QQOpenIDOAuthResponse, QQUserInfoInterface, WxAuthResponse
 } from "../interface/oauth2";
 import {ResultCodeEnum} from "../enum/http.enum";
 import ChatChannelDatabase from '../models/chat-channel.models';
@@ -475,9 +475,68 @@ const qqOauth = async (req: Request, res: Response) => {
     }
 }
 
+/**
+ * 微信code登录凭证校验
+ * @param req
+ * @param res
+ */
+const wxCodeAuthorization = async (req: Request, res: Response) => {
+    const {code} = req.query;
+    console.log('wx code', code);
+    await wxCodeSession(code as string).then((result: WxAuthResponse | any) => {
+        // 判断是否请求成功
+        if (!result) {
+            res.json({
+                code: ResultCodeEnum.fail,
+                msg: '获取用户信息失败',
+            });
+        }
+        console.log(result);
+        // 判断是否有错误码
+        if (result && result.errcode) {
+            res.json({
+                code: ResultCodeEnum.fail,
+                msg: result.errmsg,
+            });
+        } else {
+            // 获取成功
+            res.json({
+                code: ResultCodeEnum.success,
+                msg: '获取用户信息失败',
+            });
+        }
+    }).catch(() => {
+        res.json({
+            code: ResultCodeEnum.fail,
+            msg: '获取用户信息失败',
+        });
+    });
+}
+
+/**
+ * wx登录凭证校验
+ * @param code
+ */
+const wxCodeSession = (code: string) => {
+    return new Promise((resolve, reject) => {
+        axios.get(`https://api.weixin.qq.com/sns/jscode2session`, {
+            params: {
+                appid: '',
+                secret: '',
+                js_code: code,
+                grant_type: 'authorization_code',
+            }
+        }).then((result: AxiosResponse<WxAuthResponse>) => {
+            resolve(result.data)
+        }).catch(() => {
+            reject(undefined);
+        });
+    })
+}
 export {
     uuidState,
     githubOauth,
     githubAccessToken,
-    qqOauth
+    qqOauth,
+    wxCodeAuthorization
 }
