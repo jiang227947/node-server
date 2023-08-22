@@ -481,31 +481,140 @@ const qqOauth = async (req: Request, res: Response) => {
  * @param res
  */
 const wxCodeAuthorization = async (req: Request, res: Response) => {
-    const {code} = req.query;
+    const {code, avatar, name} = req.query;
     console.log('wx code', code);
     await wxCodeSession(code as string).then((result: WxAuthResponse | any) => {
+        // 加密openid
+        const openid: string = encipher(result.openid);
+        console.log(openid);
         // 判断是否请求成功
         if (!result) {
             res.json({
-                code: ResultCodeEnum.fail,
+                code: ResultCodeEnum.complete,
                 msg: '获取用户信息失败',
             });
         }
-        console.log(result);
         // 判断是否有错误码
         if (result && result.errcode) {
             res.json({
-                code: ResultCodeEnum.fail,
+                code: ResultCodeEnum.complete,
                 msg: result.errmsg,
             });
         } else {
-            // 获取成功
-            res.json({
-                code: ResultCodeEnum.success,
-                msg: '获取用户信息失败',
+            console.log('result', result);
+            // 获取成功 查询是否登录过
+            const userFind = async () => {
+                return await User.findOne({id: openid}).exec();
+            };
+            userFind().then((user: any) => {
+                if (user) {
+                    // 生成token令牌
+                    const token = jwt.sign(
+                        {name: user.username, id: user.id},
+                        // 密钥
+                        process.env.SECRET_KEY || 'uC+0Nnljo9',
+                        // 过期时间 默认24小时
+                        {
+                            expiresIn: 86400000,
+                        }
+                    );
+                    // 加密jwt
+                    const aesToken: string = encipher(token);
+                    const tokenInfo: Token = new Token('authorization', aesToken, user.id, 86400000);
+                    // 加密
+                    const params: OauthInterface = {
+                        login_type: 'wx_oauth',
+                        date: new Date().getTime(),
+                        userInfo: {
+                            id: user.id,
+                            userName: user.username, // 登录名
+                            name: user.name, // 昵称
+                            remarks: user.remarks, // 备注
+                            email: user.email, // 邮箱
+                            avatar: user.avatar, // 头像
+                            role: user.role, // 角色
+                            roleName: user.roleName, // 角色名称
+                            lastLoginTime: user.lastLoginTime, // 最后登录时间
+                            token: tokenInfo
+                        }
+                    };
+                    return res.json({
+                        code: ResultCodeEnum.success,
+                        data: params,
+                        msg: '获取用户信息成功',
+                    });
+                } else if (avatar && name) {
+                    // 查询是否有重名用户
+                    const nameFind = async () => {
+                        return await User.findOne({name}).exec();
+                    };
+                    nameFind().then((user) => {
+                        let userName: string;
+                        // 重名用户补充数字
+                        if (user) {
+                            userName = `${name}${(Math.random() * 10000).toFixed(0)}`
+                        } else {
+                            userName = name as string;
+                        }
+                        // 创建密码
+                        const aesPassword = uuidv4();
+                        // 创建用户信息
+                        const createUser = async () => {
+                            const newUser = new User({
+                                id: openid,
+                                avatar,
+                                name: userName,
+                                username: userName,
+                                password: aesPassword,
+                                role: UserRoleEnum.mobile,
+                                roleName: '小程序用户',
+                                created: new Date().getTime()
+                            });
+                            // 保存
+                            await newUser.save();
+                        }
+                        createUser().then(() => {
+                            // 生成token令牌
+                            const token = jwt.sign(
+                                {name: userName, id: openid},
+                                // 密钥
+                                process.env.SECRET_KEY || 'uC+0Nnljo9',
+                                // 过期时间 默认24小时
+                                {
+                                    expiresIn: 86400000,
+                                }
+                            );
+                            // 加密jwt
+                            const aesToken: string = encipher(token);
+                            const tokenInfo: Token = new Token('authorization', aesToken, openid, 86400000);
+                            // 加密
+                            const params: OauthInterface = {
+                                login_type: 'wx_oauth',
+                                date: new Date().getTime(),
+                                userInfo: {
+                                    id: openid,
+                                    userName: userName, // 登录名
+                                    name: userName, // 昵称
+                                    remarks: '', // 备注
+                                    email: '', // 邮箱
+                                    avatar: avatar as string, // 头像
+                                    role: UserRoleEnum.mobile,
+                                    roleName: '小程序用户',
+                                    token: tokenInfo
+                                }
+                            };
+                            res.json({
+                                code: ResultCodeEnum.success,
+                                data: params,
+                                msg: '注册成功',
+                            });
+                        });
+                    });
+                }
             });
         }
-    }).catch(() => {
+    }).catch((e) => {
+        console.log(e);
         res.json({
             code: ResultCodeEnum.fail,
             msg: '获取用户信息失败',
@@ -521,13 +630,13 @@ const wxCodeSession = (code: string) => {
     return new Promise((resolve, reject) => {
         axios.get(`https://api.weixin.qq.com/sns/jscode2session`, {
             params: {
-                appid: '',
-                secret: '',
+                appid: 'wx6008b4b874bca0d7',
+                secret: 'fad20e730f28262328e0078114e8b0dc',
                 js_code: code,
                 grant_type: 'authorization_code',
             }
         }).then((result: AxiosResponse<WxAuthResponse>) => {
-            resolve(result.data)
+            resolve(result.data);
         }).catch(() => {
             reject(undefined);
         });

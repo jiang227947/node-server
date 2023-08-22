@@ -25,7 +25,7 @@ export interface GithubAccessTokenResponse {
  */
 export interface GithubUserInterface {
     login: string;
-    id: number;
+    id: string;
     node_id: string;
     avatar_url: string;
     gravatar_id: string;

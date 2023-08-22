@@ -109,7 +109,7 @@ const sendEmail = async (req: Request, res: Response) => {
         const emailTemplate = verifyEmail(verifyCode);
         // 获取收件箱
         const toEmail = req.body.email;
-        const userLst: any = await User.findAll();
+        const userLst: any = await User.find();
         for (let i = 0; i < userLst.length; i++) {
             if (userLst[i].email === toEmail) {
                 return res.json({
@@ -153,7 +153,7 @@ const loginUser = async (req: Request, res: Response) => {
      * 2. 验证密码是否正确
      * 3. 生成令牌 登录成功
      */
-    const user: any = await User.findOne({where: {name: userName}});
+    const user: any = await User.findOne({name: userName});
     if (!user) {
         return res.json({
             code: ResultCodeEnum.fail,
@@ -225,7 +225,7 @@ const allUser = async (req: Request, res: Response) => {
     const {pageNum, pageSize} = req.body;
     const begin = (pageNum - 1) * pageSize;
     // 查询所有用户的数量
-    const userCount = await User.count();
+    const userCount: number = await User.count() as number;
     let totalPage: number;
 
     // 获取总分页数量
@@ -235,7 +235,7 @@ const allUser = async (req: Request, res: Response) => {
         totalPage = Math.trunc(userCount % pageSize === 0 ? userCount / pageSize : userCount / pageSize + 1);
     }
     // 跳过offset个实例,然后获取limit个实例
-    const allUserList = await User.findAll({offset: begin, limit: pageSize}).then((users) => {
+    const allUserList = await User.find({offset: begin, limit: pageSize}).then((users) => {
         return users.map((item: any) => {
             return {
                 id: item.id,

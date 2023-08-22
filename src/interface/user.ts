@@ -5,7 +5,7 @@ import {Token} from '../models/class/token';
  * 角色接口
  */
 export interface UserInterface {
-    id: number; // id
+    id: string; // id
     name: string;    // 登录名
     userName: string;    // 用户名
     token: Token;   // token数据

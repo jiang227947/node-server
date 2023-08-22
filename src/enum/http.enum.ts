@@ -23,8 +23,10 @@ const CODE_MESSAGE = {
  * http返回状态枚举
  */
 export enum ResultCodeEnum {
-    // 服务器请求成功
+    // 服务器请求成功，结果正确
     success = 200,
-    // 服务器请求失败
+    // 服务器请求成功，结果错误
+    complete = 201,
+    // 服务器请求失败或代码错误
     fail = -1
 }

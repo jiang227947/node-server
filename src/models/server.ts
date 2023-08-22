@@ -9,13 +9,14 @@ import ChatMessageRouter from '../routes/chat.router';
 import Oauth2Router from '../routes/oauth2.router';
 import ChatChannelRouter from '../routes/chat-channel.router';
 // Models
-import User from './user.models';
 import Filedb from './file.models';
 import LeaveMessage from './leave-message.models';
 import Visitor from './visitor.models';
 import ChatDatabase from './chat.models';
 import ChatChannelDatabase from './chat-channel.models';
 import {Redis} from "../db/redis";
+import mongoose from "mongoose";
+import {connectMongoDb} from "../db/mongoose";
 
 class Servers {
     private app: Application;
@@ -31,16 +32,33 @@ class Servers {
         // 默认启动
         this.listen();
         try {
+            /**
+             * 连接mongodb数据库
+             */
+            const connect = connectMongoDb().then(() => {
+                const db = mongoose.connection;
+                db.on('error', (evt) => {
+                    console.log(evt);
+                });
+                db.once('open', (evt) => {
+                    console.log('open', evt);
+                });
+                // json数据
+                this.midlewares();
+                // 添加路由接口
+                this.routes();
+            });
             // 连接Redis和创建数据库
-            new Redis().connect().then(() =>
-                this.dbConnect().then(() => {
-                    // json数据
-                    this.midlewares();
-                    // 添加路由接口
-                    this.routes();
-                }));
+            const redis = new Redis().connect();
+            const dbConnect = this.dbConnect();
+            Promise.all([connect, redis, dbConnect]).then(() => {
+                // console.log('success:', results);
+            }).catch(e => {
+                // 失败的时候则返回最先被reject失败状态的值
+                console.log('error', e);
+            })
         } catch (e) {
-            console.error('连接数据库失败');
+            console.error('服务初始化失败');
         }
     }
 
@@ -112,7 +130,7 @@ class Servers {
             // await sequelize.authenticate();
             // 如果表不存在,则创建该表(如果已经存在,则不执行任何操作)
             // 用户表
-            await User.sync();
+            // await User.sync();
             // 文件路径表
             await Filedb.sync();
             // 登录页留言框表
