@@ -9,7 +9,7 @@
 
 ### 技术栈
 
-- 数据库（Mysql）连接：[sequelize](https://www.sequelize.cn/core-concepts/getting-started/)
+- 数据库（Mysql）连接：[sequelize](https://www.sequelize.cn/core-concepts/getting-started/)（后续更换为MongoDB+MongoSe）
 - Token鉴权：[JWT](https://jwt.io/)
 - 长连接：[Socket.IO](https://socket.io/)
 
