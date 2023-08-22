@@ -630,8 +630,8 @@ const wxCodeSession = (code: string) => {
     return new Promise((resolve, reject) => {
         axios.get(`https://api.weixin.qq.com/sns/jscode2session`, {
             params: {
-                appid: 'wx6008b4b874bca0d7',
-                secret: 'fad20e730f28262328e0078114e8b0dc',
+                appid: '',
+                secret: '',
                 js_code: code,
                 grant_type: 'authorization_code',
             }
