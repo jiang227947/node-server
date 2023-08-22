@@ -1,17 +1,19 @@
-# node-server
-## 包含`Node、Ts、JWT、sequelize、mysql`
 
 ### `2023/3/25` Node服务替代Java服务上线
 
 
 - [Angular前端项目地址](https://github.com/jiang227947/ziyi-project)
+- [Uni-app小程序项目地址](https://github.com/jiang227947/discord-uniapp)
 
 
 ### 技术栈
 
-- 数据库（Mysql）连接：[sequelize](https://www.sequelize.cn/core-concepts/getting-started/)（后续更换为MongoDB+MongoSe）
+- 框架：[Express](https://www.expressjs.com.cn/)
+- ~~数据库（Mysql）连接：[sequelize](https://www.sequelize.cn/core-concepts/getting-started/)~~
+- 数据库（MongoDB）连接：[Mongoose](https://mongoosejs.com/)
 - Token鉴权：[JWT](https://jwt.io/)
 - 长连接：[Socket.IO](https://socket.io/)
+- 缓存：[Radis](https://redis.io/)
 
 1.安装依赖
 ```shell
