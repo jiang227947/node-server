@@ -13,6 +13,7 @@ import {
 import User from '../models/user.models';
 import {ChatChannelRoom} from '../models/class/ChatChannelRoom';
 import ChatDatabase from '../models/chat.models';
+import {v4 as uuidv4} from "uuid";
 
 /**
  * websocket服务
@@ -57,7 +58,7 @@ io.on('connection', async (socket) => {
         if (userInfo) {
             // 用户进入房间信息
             const decode = jwt.decode(userInfo) as { name: string, id: number, iat: number, exp: number };
-            const user: any = await User.findOne({where: {id: decode.id}});
+            const user: any = await User.findOne({id: decode.id});
             console.log('socket连接成功!', decode.name, socket.id);
             let room: ChatChannelRoomInterface;
             // 准备连接的频道ID
@@ -291,8 +292,10 @@ io.on('connection', async (socket) => {
  */
 const saveMessage = async (msg: ChatMessagesInterface) => {
     try {
+        const uuid = uuidv4();
         const massage = {
             ...msg,
+            id: uuid,
             // 附件转换为字符串
             attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
             // 引用消息转换为字符串

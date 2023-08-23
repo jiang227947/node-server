@@ -1,58 +1,62 @@
-import sequelize from "../db/connection";
-import {DataTypes} from "sequelize";
+import mongoose from "mongoose";
 
 /**
  * 聊天频道模型定义
  */
-const ChatChannelDatabase = sequelize.define('chat_channel', {
+const ChatChannelSchema = new mongoose.Schema({
     id: {
-        // 数据类型
-        type: DataTypes.INTEGER,
-        // 是否为key
-        primaryKey: true,
-        // 自动递增
-        autoIncrement: true,
+        type: String,
+        required: true,
+        unique: true,
     },
     // 频道名称
     channelName: {
-        type: DataTypes.STRING,
+        type: String,
+        required: true,
+        unique: true,
     },
     // 频道ID
     channelId: {
-        type: DataTypes.STRING,
+        type: String,
+        required: true,
+        unique: true,
     },
     // 头像
     avatar: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 标签
     tags: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 管理员
     admins: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 频道人员
     personnel: {
-        type: DataTypes.TEXT,
+        type: Object,
     },
     // 公告
     announcement: {
-        type: DataTypes.TEXT,
+        type: String,
     },
     // 是否为私密频道
     isPrivacy: {
-        type: DataTypes.INTEGER,
+        type: Number,
     },
     // 密码
     password: {
-        type: DataTypes.INTEGER,
+        type: String,
     },
     // 备注
     remark: {
-        type: DataTypes.STRING,
+        type: String,
+    },
+    // 创建时间
+    updated: {
+        type: Number,
     },
 });
-
+const ChatChannelDatabase = mongoose.model('chat_channel', ChatChannelSchema);
 export default ChatChannelDatabase;

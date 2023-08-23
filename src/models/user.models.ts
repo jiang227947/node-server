@@ -104,15 +104,15 @@ const userSchema = new mongoose.Schema({
     },
     // 最后登录时间
     lastLoginTime: {
-        type: Number,
-    },
-    // 修改时间
-    created: {
-        type: Number,
+        type: String,
     },
     // 创建时间
+    created: {
+        type: String,
+    },
+    // 修改时间
     updated: {
-        type: Number,
+        type: String,
     },
 });
 const User = mongoose.model('User', userSchema);

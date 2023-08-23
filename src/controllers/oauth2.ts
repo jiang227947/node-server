@@ -130,7 +130,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
             });
         }).then(async () => {
             // 查询是否存在该用户
-            const user: any = await User.findOne({where: {id: userInfo.data.id}});
+            const user: any = await User.findOne({id: userInfo.data.id});
             if (!user) {
                 // 将用户信息保存到数据库中
                 try {
@@ -217,12 +217,12 @@ const githubAccessToken = async (req: Request, res: Response) => {
                 // 验证成功，跳转到首页
                 res.redirect(`/login/auth?${callbackParams}`);
                 // 更新登录时间
-                await user.update(
-                    {
-                        lastLoginTime: new Date().getTime(),
-                    },
-                    {
-                        where: {id: user.id},
+                await User.updateOne(
+                    {id: user.id},
+                    {lastLoginTime: new Date().getTime()},
+                    function (err, res) {
+                        if (err) throw err;
+                        console.log(res);
                     }
                 );
             }
@@ -349,7 +349,7 @@ const qqOauth = async (req: Request, res: Response) => {
             });
         }).then(async () => {
             // 查询是否存在该用户
-            const user: any = await User.findOne({where: {id: openid}});
+            const user: any = await User.findOne({id: openid});
             if (!user) {
                 // 将用户信息保存到数据库中
                 try {
@@ -368,10 +368,19 @@ const qqOauth = async (req: Request, res: Response) => {
                         role: UserRoleEnum.qq,
                         roleName: 'QQ用户'
                     });
-                    const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+                    const channel: any = await ChatChannelDatabase.findOne({channelId: '8808'});
                     // 添加至公共频道
-                    await CommonUtil.updateChatChannel(channel, newUser, 'add').then((personnel: string | boolean) => {
-                        if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
+                    await CommonUtil.updateChatChannel(channel, newUser, 'add').then(async (personnel: string | boolean) => {
+                        if (personnel) {
+                            await ChatChannelDatabase.updateOne(
+                                {channelId: '8808'},
+                                {personnel},
+                                function (err, res) {
+                                    if (err) throw err;
+                                    console.log(res);
+                                }
+                            );
+                        }
                     });
                     // 生成token令牌
                     const token = jwt.sign(
@@ -407,12 +416,12 @@ const qqOauth = async (req: Request, res: Response) => {
                     // 跳转到首页
                     res.redirect(`/login/auth?${callbackParams}`);
                     // 更新登录时间
-                    await user.update(
-                        {
-                            lastLoginTime: new Date().getTime(),
-                        },
-                        {
-                            where: {id: user.id},
+                    await User.updateOne(
+                        {id: user.id},
+                        {lastLoginTime: new Date().getTime()},
+                        function (err, res) {
+                            if (err) throw err;
+                            console.log(res);
                         }
                     );
                 } catch (e) {
@@ -455,12 +464,12 @@ const qqOauth = async (req: Request, res: Response) => {
                 // 验证成功，跳转到首页
                 res.redirect(`/login/auth?${callbackParams}`);
                 // 更新登录时间
-                await user.update(
-                    {
-                        lastLoginTime: new Date().getTime(),
-                    },
-                    {
-                        where: {id: user.id},
+                await User.updateOne(
+                    {id: user.id},
+                    {lastLoginTime: new Date().getTime()},
+                    function (err, res) {
+                        if (err) throw err;
+                        console.log(res);
                     }
                 );
             }
@@ -482,137 +491,145 @@ const qqOauth = async (req: Request, res: Response) => {
  */
 const wxCodeAuthorization = async (req: Request, res: Response) => {
     const {code, avatar, name} = req.query;
-    console.log('wx code', code);
     await wxCodeSession(code as string).then((result: WxAuthResponse | any) => {
-        // 加密openid
-        const openid: string = encipher(result.openid);
-        console.log(openid);
         // 判断是否请求成功
         if (!result) {
-            res.json({
+            return res.json({
                 code: ResultCodeEnum.complete,
                 msg: '获取用户信息失败',
             });
         }
         // 判断是否有错误码
         if (result && result.errcode) {
-            res.json({
+            return res.json({
                 code: ResultCodeEnum.complete,
                 msg: result.errmsg,
             });
-        } else {
-            console.log('result', result);
-            // 获取成功 查询是否登录过
-            const userFind = async () => {
-                return await User.findOne({id: openid}).exec();
-            };
-            userFind().then((user: any) => {
-                if (user) {
-                    // 生成token令牌
-                    const token = jwt.sign(
-                        {name: user.username, id: user.id},
-                        // 密钥
-                        process.env.SECRET_KEY || 'uC+0Nnljo9',
-                        // 过期时间 默认24小时
-                        {
-                            expiresIn: 86400000,
-                        }
-                    );
-                    // 加密jwt
-                    const aesToken: string = encipher(token);
-                    const tokenInfo: Token = new Token('authorization', aesToken, user.id, 86400000);
-                    // 加密
-                    const params: OauthInterface = {
-                        login_type: 'wx_oauth',
-                        date: new Date().getTime(),
-                        userInfo: {
-                            id: user.id,
-                            userName: user.username, // 登录名
-                            name: user.name, // 昵称
-                            remarks: user.remarks, // 备注
-                            email: user.email, // 邮箱
-                            avatar: user.avatar, // 头像
-                            role: user.role, // 角色
-                            roleName: user.roleName, // 角色名称
-                            lastLoginTime: user.lastLoginTime, // 最后登录时间
-                            token: tokenInfo
-                        }
-                    };
-                    return res.json({
-                        code: ResultCodeEnum.success,
-                        data: params,
-                        msg: '获取用户信息成功',
-                    });
-                } else if (avatar && name) {
-                    // 查询是否有重名用户
-                    const nameFind = async () => {
-                        return await User.findOne({name}).exec();
-                    };
-                    nameFind().then((user) => {
-                        let userName: string;
-                        // 重名用户补充数字
-                        if (user) {
-                            userName = `${name}${(Math.random() * 10000).toFixed(0)}`
-                        } else {
-                            userName = name as string;
-                        }
-                        // 创建密码
-                        const aesPassword = uuidv4();
-                        // 创建用户信息
-                        const createUser = async () => {
-                            const newUser = new User({
+        }
+        // 加密openid
+        const openid: string = encipher(result.openid);
+        // 获取成功 查询是否登录过
+        const userFind = async () => {
+            return await User.findOne({id: openid}).exec();
+        };
+        userFind().then((user: any) => {
+            if (user) {
+                // 生成token令牌
+                const token = jwt.sign(
+                    {name: user.username, id: user.id},
+                    // 密钥
+                    process.env.SECRET_KEY || 'uC+0Nnljo9',
+                    // 过期时间 默认24小时
+                    {
+                        expiresIn: 86400000,
+                    }
+                );
+                // 加密jwt
+                const aesToken: string = encipher(token);
+                const tokenInfo: Token = new Token('authorization', aesToken, user.id, 86400000);
+                // 加密
+                const params: OauthInterface = {
+                    login_type: 'wx_oauth',
+                    date: new Date().getTime(),
+                    userInfo: {
+                        id: user.id,
+                        userName: user.username, // 登录名
+                        name: user.name, // 昵称
+                        remarks: user.remarks, // 备注
+                        email: user.email, // 邮箱
+                        avatar: user.avatar, // 头像
+                        role: user.role, // 角色
+                        roleName: user.roleName, // 角色名称
+                        lastLoginTime: user.lastLoginTime, // 最后登录时间
+                        token: tokenInfo
+                    }
+                };
+                return res.json({
+                    code: ResultCodeEnum.success,
+                    data: params,
+                    msg: '获取用户信息成功',
+                });
+            } else if (avatar && name) {
+                // 查询是否有重名用户
+                const nameFind = async () => {
+                    return await User.findOne({name}).exec();
+                };
+                nameFind().then((user) => {
+                    let userName: string;
+                    // 重名用户补充数字
+                    if (user) {
+                        userName = `${name}${(Math.random() * 10000).toFixed(0)}`
+                    } else {
+                        userName = name as string;
+                    }
+                    // 创建密码
+                    const aesPassword = uuidv4();
+                    // 创建用户信息
+                    const createUser = async () => {
+                        const newUser = new User({
+                            id: openid,
+                            avatar,
+                            name: userName,
+                            username: userName,
+                            password: aesPassword,
+                            role: UserRoleEnum.mobile,
+                            roleName: '小程序用户',
+                            created: new Date().getTime()
+                        });
+                        // 保存
+                        await newUser.save();
+                    }
+                    createUser().then(async () => {
+                        // 生成token令牌
+                        const token = jwt.sign(
+                            {name: userName, id: openid},
+                            // 密钥
+                            process.env.SECRET_KEY || 'uC+0Nnljo9',
+                            // 过期时间 默认24小时
+                            {
+                                expiresIn: 86400000,
+                            }
+                        );
+                        // 加密jwt
+                        const aesToken: string = encipher(token);
+                        const tokenInfo: Token = new Token('authorization', aesToken, openid, 86400000);
+                        // 加密
+                        const params: OauthInterface = {
+                            login_type: 'wx_oauth',
+                            date: new Date().getTime(),
+                            userInfo: {
                                 id: openid,
-                                avatar,
-                                name: userName,
-                                username: userName,
-                                password: aesPassword,
+                                userName: userName, // 登录名
+                                name: userName, // 昵称
+                                remarks: '', // 备注
+                                email: '', // 邮箱
+                                avatar: avatar as string, // 头像
                                 role: UserRoleEnum.mobile,
                                 roleName: '小程序用户',
-                                created: new Date().getTime()
-                            });
-                            // 保存
-                            await newUser.save();
-                        }
-                        createUser().then(() => {
-                            // 生成token令牌
-                            const token = jwt.sign(
-                                {name: userName, id: openid},
-                                // 密钥
-                                process.env.SECRET_KEY || 'uC+0Nnljo9',
-                                // 过期时间 默认24小时
-                                {
-                                    expiresIn: 86400000,
-                                }
-                            );
-                            // 加密jwt
-                            const aesToken: string = encipher(token);
-                            const tokenInfo: Token = new Token('authorization', aesToken, openid, 86400000);
-                            // 加密
-                            const params: OauthInterface = {
-                                login_type: 'wx_oauth',
-                                date: new Date().getTime(),
-                                userInfo: {
-                                    id: openid,
-                                    userName: userName, // 登录名
-                                    name: userName, // 昵称
-                                    remarks: '', // 备注
-                                    email: '', // 邮箱
-                                    avatar: avatar as string, // 头像
-                                    role: UserRoleEnum.mobile,
-                                    roleName: '小程序用户',
-                                    token: tokenInfo
-                                }
-                            };
-                            res.json({
-                                code: ResultCodeEnum.success,
-                                data: params,
-                                msg: '注册成功',
-                            });
+                                token: tokenInfo
+                            }
+                        };
+                        const channel: any = await ChatChannelDatabase.findOne({channelId: '8808'});
+                        // 添加至公共频道
+                        await CommonUtil.updateChatChannel(channel, params.userInfo, 'add').then(async (personnel: string | boolean) => {
+                            if (personnel) {
+                                await ChatChannelDatabase.updateOne({channelId: '8808'}, {personnel});
+                            }
+                        });
+                        res.json({
+                            code: ResultCodeEnum.success,
+                            data: params,
+                            msg: '注册成功',
                         });
                     });
-                }
-            });
-        }
+                });
+            } else {
+                res.json({
+                    code: ResultCodeEnum.complete,
+                    msg: '该用户尚未注册',
+                });
+            }
+        });
     }).catch((e) => {
         console.log(e);
         res.json({
@@ -630,8 +647,8 @@ const wxCodeSession = (code: string) => {
     return new Promise((resolve, reject) => {
         axios.get(`https://api.weixin.qq.com/sns/jscode2session`, {
             params: {
-                appid: '',
-                secret: '',
+                appid: 'wx6008b4b874bca0d7',
+                secret: 'c0b8dbbd0ce2c91c2c9fc53f50656644',
                 js_code: code,
                 grant_type: 'authorization_code',
             }

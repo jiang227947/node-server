@@ -6,7 +6,6 @@ import {ResultCodeEnum} from '../enum/http.enum';
 import multer from 'multer';
 import fs from 'fs';
 import ChatChannelDatabase from '../models/chat-channel.models';
-import {Op} from 'sequelize';
 import {v4 as uuidv4} from 'uuid';
 import User from '../models/user.models';
 
@@ -21,7 +20,7 @@ const queryChatMessage = async (req: Request, res: Response) => {
         // const begin = (pageNum - 1) * pageSize;
         // console.log('begin', begin);
         // 查询所有聊天消息的数量
-        const chatCount: any = await ChatDatabase.count({where: {channelId}});
+        const chatCount: any = await ChatDatabase.find({channelId}).count();
         // 计算预计拿到的数量和总数相差的值
         const offset: number = chatCount - pageNum * pageSize;
         // console.log('offset', offset);
@@ -48,24 +47,19 @@ const queryChatMessage = async (req: Request, res: Response) => {
         }
         // 跳过offset个实例,然后获取limit个实例
         // console.log(`跳过${_offset}个实例,然后获取${_limit}个实例`);
-        const chatList = await ChatDatabase.findAll({
-            where: {
-                channelId
-            },
-            offset: _offset,
-            limit: _limit
-        });
+        const chatList: any[] = await ChatDatabase.find({
+            channelId
+        }).skip(_offset).limit(_limit);
+
         // 格式化信息
         const msgList = chatList.map(item => {
-            return {
-                ...item.dataValues,
-                author: JSON.parse(item.dataValues.author as string),
-                reaction: JSON.parse(item.dataValues.reaction as string),
-                messageReference: JSON.parse(item.dataValues.messageReference as string),
-            };
+            item.author = JSON.parse(item.author);
+            item.reaction = JSON.parse(item.reaction);
+            item.messageReference = JSON.parse(item.messageReference);
+            return item;
         });
         const data = new ResultListPage(
-            200,
+            ResultCodeEnum.success,
             '查询成功',
             msgList,
             pageNum,
@@ -73,10 +67,10 @@ const queryChatMessage = async (req: Request, res: Response) => {
             chatCount,
             totalPage
         );
-        res.status(200).json(data);
+        res.json(data);
     } catch (e) {
         // 返回结构
-        res.status(200).json({
+        res.json({
             code: ResultCodeEnum.fail,
             msg: `查询失败`,
         });
@@ -92,20 +86,18 @@ const addReaction = async (req: Request, res: Response) => {
     try {
         const {emoji, id, userId} = req.body;
         // 验证是否存在该消息
-        const message = await ChatDatabase.findOne({where: {id}});
+        const message: any = await ChatDatabase.findOne({id});
         if (message) {
-            const reaction = CommonUtil.addReaction(message.dataValues.reaction, emoji, userId);
+            const reaction = CommonUtil.addReaction(message.reaction, emoji, userId);
             // 更新反应表情
-            await message.update(
+            await ChatDatabase.updateOne(
+                {id},
                 {
                     reaction: JSON.stringify(reaction),
-                },
-                {
-                    where: {id},
                 }
             );
             // 返回结构
-            res.status(200).json({
+            res.json({
                 code: ResultCodeEnum.success,
                 msg: '添加成功',
                 data: null,
@@ -159,13 +151,20 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
             const {id} = req.body;
             // 判断是新增还是修改
             if (id) {
-                const channel: any = await ChatChannelDatabase.findOne({where: {id}});
+                const channel: any = await ChatChannelDatabase.findOne({id});
                 // 判断是否存在头像
                 if (fs.existsSync(channel.avatar)) {
                     fs.unlinkSync(channel.avatar); // 删除旧头像
                 }
                 // 更新新头像
-                await channel.update({avatar: `${path}/${req.file?.originalname}`}, {where: {id}});
+                await ChatChannelDatabase.updateOne(
+                    {id},
+                    {avatar: `${path}/${req.file?.originalname}`},
+                    function (err, res) {
+                        if (err) throw err;
+                        console.log(res);
+                    }
+                );
             } else {
                 // 返回头像路径
                 res.json({
@@ -197,35 +196,28 @@ const createChannel = async (req: Request, res: Response) => {
     try {
         const {avatar, channelName, tags, admins, announcement, isPrivacy, password, remark} = req.body;
         const userId = req.header('userId');
-        const channel: any = await ChatChannelDatabase.findAll({
-            where: {
-                admins: {
-                    // 带上like查询条件
-                    [Op.like]: `%${userId}%`
-                },
-            },
+        const channel: any = await ChatChannelDatabase.find().where({
+            admins: userId
         });
         // 判断该用户的频道数量是否超过三个
         if (channel.length >= 3) {
             // 返回结构
-            res.json({
+            return res.json({
                 code: ResultCodeEnum.fail,
                 msg: `最多创建三个频道`,
             });
-            return;
         }
-        const isChannelName = await ChatChannelDatabase.findOne(({where: {channelName}}));
+        const isChannelName = await ChatChannelDatabase.findOne(({channelName}));
         // 判断是否重名
         if (isChannelName) {
             // 返回结构
-            res.json({
+            return res.json({
                 code: ResultCodeEnum.fail,
                 msg: `频道名称已存在`,
             });
-            return;
         }
         // 获取用户信息
-        const user: any = await User.findOne({where: {id: userId}});
+        const user: any = await User.findOne({id: userId});
         const userInfo = {
             id: user.id,
             userName: user.username,
@@ -239,7 +231,8 @@ const createChannel = async (req: Request, res: Response) => {
         // 生成uuid
         const uuid = uuidv4();
         // 创建数据
-        await ChatChannelDatabase.create({
+        const newChatChannel = new ChatChannelDatabase({
+            id: uuidv4(),
             channelId: uuid,
             avatar,
             channelName,
@@ -249,8 +242,11 @@ const createChannel = async (req: Request, res: Response) => {
             announcement,
             isPrivacy,
             password,
-            remark
+            remark,
+            created: new Date().getTime()
         });
+        // 保存
+        await newChatChannel.save();
         // 返回结构
         res.json({
             code: ResultCodeEnum.success,
@@ -273,14 +269,8 @@ const createChannel = async (req: Request, res: Response) => {
  */
 const queryChannel = async (req: Request, res: Response) => {
     const {id} = req.query;
-    const channel: any = await ChatChannelDatabase.findAll({
-        where: {
-            personnel: {
-                // 带上like查询条件
-                [Op.like]: `%"id":${id}%`
-            },
-        },
-    });
+    const regExp = new RegExp('"id":' + id);
+    const channel: any = await ChatChannelDatabase.find().regex('personnel', regExp);
     // 更新数据用的
     /*const channelAll: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
     let channelAllPersonnel: ChatChannelRoomUserInterface[] = JSON.parse(channelAll.personnel);
@@ -293,15 +283,13 @@ const queryChannel = async (req: Request, res: Response) => {
     channelAll.update({personnel: JSON.stringify(channelAllPersonnel)}, {where: {channelId: '8808'}});*/
     // 格式转换
     const result = channel.map((item: any) => {
-        return {
-            ...item.dataValues,
-            // 管理员格式转换
-            admins: JSON.parse(item.dataValues.admins),
-            // 频道人员格式转换
-            personnel: JSON.parse(item.dataValues.personnel),
-            // 密码删除
-            password: null
-        };
+        // 管理员格式转换
+        item.admins = JSON.parse(item.admins);
+        // 频道人员格式转换
+        item.personnel = JSON.parse(item.admins);
+        // 密码删除
+        item.password = null;
+        return item;
     });
     // 返回结构
     res.json({
@@ -327,17 +315,18 @@ const queryChannel = async (req: Request, res: Response) => {
 const deleteChannel = async (req: Request, res: Response) => {
     try {
         const {channelId} = req.body;
-        const channel: any = await ChatChannelDatabase.findOne({where: {channelId}});
+        const channel: any = await ChatChannelDatabase.findOne({channelId});
         if (!channel) {
             return res.json({
                 code: ResultCodeEnum.fail,
                 msg: `频道不存在`,
             });
+        } else {
+            // 删除频道
+            await ChatChannelDatabase.deleteOne({channelId});
         }
-        // 删除频道
-        await channel.destroy();
         // 删除频道聊天记录
-        await ChatDatabase.destroy({where: {channelId}});
+        await ChatDatabase.deleteOne({channelId});
         res.json({
             code: ResultCodeEnum.success,
             msg: `频道删除成功`,
@@ -358,7 +347,7 @@ const deleteChannel = async (req: Request, res: Response) => {
 const joinChannel = async (req: Request, res: Response) => {
     try {
         const {channelId, password} = req.body;
-        const channel: any = await ChatChannelDatabase.findOne({where: {channelId}});
+        const channel: any = await ChatChannelDatabase.findOne({channelId});
         if (!channel) {
             return res.json({
                 code: ResultCodeEnum.fail,
@@ -386,7 +375,7 @@ const joinChannel = async (req: Request, res: Response) => {
             });
         }
         // 获取用户信息
-        const user: any = await User.findOne({where: {id: userId}});
+        const user: any = await User.findOne({id: userId});
         const userInfo = {
             id: user.id,
             userName: user.username,
@@ -398,12 +387,10 @@ const joinChannel = async (req: Request, res: Response) => {
         };
         const personnel = [...channelPersonnel, userInfo];
         // 更新频道用户
-        await channel.update(
+        await ChatChannelDatabase.updateOne(
+            {channelId},
             {
                 personnel: JSON.stringify(personnel),
-            },
-            {
-                where: {channelId},
             }
         );
         res.json({

@@ -35,7 +35,7 @@ const addLeaveMessage = async (req: Request, res: Response) => {
  * @param res 结果
  */
 const getLeaveMessage = async (req: Request, res: Response) => {
-  const listProducts = await LeaveMessage.findAll();
+  const listProducts = await LeaveMessage.find();
   res.json({
     code: ResultCodeEnum.success,
     msg: `查询成功`,

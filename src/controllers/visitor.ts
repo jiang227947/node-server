@@ -9,19 +9,19 @@ import {ResultCodeEnum} from "../enum/http.enum";
 const visitor = async (req: Request, res: Response) => {
     const {ip, hostname, city, region, country, loc, timezone} = req.body;
     // 验证是否存在相同ip
-    const visitorUser: any = await Visitor.findOne({where: {ip}});
+    const visitorUser: any = await Visitor.findOne({ip});
     if (visitorUser) {
         // 更新访问时间
-        await visitorUser.update(
-            {
-                accessTime: new Date().getTime(),
-            },
-            {
-                where: {id: visitorUser.id},
+        await Visitor.updateOne(
+            {id: visitorUser.id},
+            {accessTime: new Date().getTime()},
+            function (err, res) {
+                if (err) throw err;
+                console.log(res);
             }
         );
         res.status(200).json({
-            code: 0,
+            code: ResultCodeEnum.success,
             msg: `请求成功`,
         });
     } else {
@@ -30,7 +30,7 @@ const visitor = async (req: Request, res: Response) => {
             // 新增访问
             await Visitor.create({ip, hostname, city, region, country, loc, timezone, accessTime});
             res.status(200).json({
-                code: 0,
+                code: ResultCodeEnum.success,
                 msg: `请求成功`,
             });
         } catch (error) {

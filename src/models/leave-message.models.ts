@@ -1,28 +1,27 @@
-import sequelize from '../db/connection';
-import { DataTypes } from 'sequelize';
+import mongoose from "mongoose";
 
 /**
  * 登录页留言框
  */
-const LeaveMessage = sequelize.define('leave_message', {
+const LeaveMessageSchema = new mongoose.Schema({
   id: {
-    // 数据类型
-    type: DataTypes.INTEGER,
-    // 是否为key
-    primaryKey: true,
-    // 自动递增
-    autoIncrement: true,
+    type: String,
+    required: true,
+    unique: true,
   },
   name: {
-    type: DataTypes.STRING,
+    type: String,
   },
   message: {
-    type: DataTypes.TEXT,
-    allowNull: false,
+    type: String,
   },
   browser: {
-    type: DataTypes.STRING,
+    type: String,
+  },
+  // 创建时间
+  updated: {
+    type: Number,
   },
 });
-
+const LeaveMessage = mongoose.model('leave_message', LeaveMessageSchema);
 export default LeaveMessage;

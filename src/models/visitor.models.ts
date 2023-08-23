@@ -1,50 +1,45 @@
-import sequelize from '../db/connection';
-import {DataTypes} from 'sequelize';
+import mongoose from "mongoose";
 
 /**
  * 访客模型定义
  */
-const Visitor = sequelize.define('visitor', {
+const VisitorSchema = new mongoose.Schema({
     id: {
-        // 数据类型
-        type: DataTypes.INTEGER,
-        // 是否为key
-        primaryKey: true,
-        // 自动递增
-        autoIncrement: true,
+        type: String,
+        required: true,
     },
     // ip地址
     ip: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 主机名
     hostname: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 城市
     city: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 地区
     region: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 国家
     country: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 坐标
     loc: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 时区
     timezone: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 访问时间
     accessTime: {
-        type: DataTypes.BIGINT,
+        type: String,
     },
 });
-
+const Visitor = mongoose.model('visitor', VisitorSchema);
 export default Visitor;

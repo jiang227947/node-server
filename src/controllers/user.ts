@@ -13,6 +13,7 @@ import {CommonUtil} from '../util/common-util';
 import MailService, {verifyEmail} from '../service/mailService';
 import {Redis} from '../db/redis';
 import {UserRoleEnum} from '../enum/user.enum';
+import moment from 'moment';
 
 /**
  * 创建用户
@@ -27,7 +28,7 @@ const register = async (req: Request, res: Response) => {
         const aesPassword = encipher(password);
 
         // 验证是否存在相同用户
-        const userRepeat = await User.findOne({where: {name}});
+        const userRepeat = await User.findOne({name});
         if (userRepeat) {
             return res.json({
                 code: ResultCodeEnum.fail,
@@ -62,10 +63,12 @@ const register = async (req: Request, res: Response) => {
             role: UserRoleEnum.general,
             roleName: '普通用户',
         });
-        const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+        const channel: any = await ChatChannelDatabase.findOne({channelId: '8808'});
         // 添加至公共频道
-        await CommonUtil.updateChatChannel(channel, user, 'add').then((personnel: string | boolean) => {
-            if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
+        await CommonUtil.updateChatChannel(channel, user, 'add').then(async (personnel: string | boolean) => {
+            if (personnel) {
+                await ChatChannelDatabase.updateOne({channelId: '8808'}, {personnel});
+            }
         });
         res.json({
             code: ResultCodeEnum.success,
@@ -148,6 +151,12 @@ const sendEmail = async (req: Request, res: Response) => {
  */
 const loginUser = async (req: Request, res: Response) => {
     const {userName, password} = req.body;
+    if (!userName || !password) {
+        return res.json({
+            code: ResultCodeEnum.fail,
+            msg: `参数错误`,
+        });
+    }
     /**
      * 1. 验证是否存在该用户
      * 2. 验证密码是否正确
@@ -206,12 +215,12 @@ const loginUser = async (req: Request, res: Response) => {
         },
     });
     // 更新登录时间
-    await user.update(
-        {
-            lastLoginTime: new Date().getTime(),
-        },
-        {
-            where: {id: user.id},
+    await User.updateOne(
+        {id: user.id},
+        {lastLoginTime: new Date().getTime()},
+        function (err, res) {
+            if (err) throw err;
+            console.log(res);
         }
     );
 };
@@ -225,30 +234,36 @@ const allUser = async (req: Request, res: Response) => {
     const {pageNum, pageSize} = req.body;
     const begin = (pageNum - 1) * pageSize;
     // 查询所有用户的数量
-    const userCount: number = await User.count() as number;
+    const userCount: number = await User.find({}).count();
     let totalPage: number;
-
     // 获取总分页数量
     if (pageSize === 0) {
         totalPage = 0;
     } else {
         totalPage = Math.trunc(userCount % pageSize === 0 ? userCount / pageSize : userCount / pageSize + 1);
     }
+    const userPageList: any[] = await User.find({}).skip(begin).limit(pageSize);
     // 跳过offset个实例,然后获取limit个实例
-    const allUserList = await User.find({offset: begin, limit: pageSize}).then((users) => {
-        return users.map((item: any) => {
-            return {
-                id: item.id,
-                name: item.name,
-                userName: item.username,
-                role: item.role,
-                roleName: item.roleName,
-                lastLoginTime: item.lastLoginTime,
-            };
-        });
+    const resultList = userPageList.map((item: any) => {
+        return {
+            id: item.id,
+            name: item.name,
+            userName: item.username,
+            role: item.role,
+            roleName: item.roleName,
+            lastLoginTime: item.lastLoginTime,
+        };
     });
-    const data = new ResultListPage(200, '查询成功', allUserList, pageNum, pageSize, userCount, totalPage);
-    res.status(200).json(data);
+    const data = new ResultListPage(
+        ResultCodeEnum.success,
+        '查询成功',
+        resultList,
+        pageNum,
+        pageSize,
+        userCount,
+        totalPage
+    );
+    res.json(data);
 };
 
 /**
@@ -259,20 +274,23 @@ const allUser = async (req: Request, res: Response) => {
 const queryUserById = async (req: Request, res: Response) => {
     try {
         const {id} = req.query;
-        const user: any = await User.findOne({where: {id}});
+        const user: any = await User.findOne({id});
         if (!user) {
             return res.json({
                 code: ResultCodeEnum.fail,
                 msg: `用户不存在`,
             });
         }
-        const userInfo = {...user.dataValues, password: null};
+        const created = moment(user.created, 'DD/MM/YYYY HH:mm:ss');
+        user.password = null;
+        user.created = created;
         return res.json({
             code: ResultCodeEnum.success,
             msg: `查询成功`,
-            data: userInfo
+            data: user
         });
     } catch (e) {
+        console.log(e);
         return res.json({
             code: ResultCodeEnum.fail,
             msg: `查询失败`,
@@ -288,17 +306,19 @@ const queryUserById = async (req: Request, res: Response) => {
 const deleteUser = async (req: Request, res: Response) => {
     try {
         const {id} = req.body;
-        const user: any = await User.findOne({where: {id}});
+        const user: any = await User.findOne({id});
         if (!user) {
             return res.json({
                 code: ResultCodeEnum.fail,
                 msg: `用户不存在`,
             });
         }
-        const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+        const channel: any = await ChatChannelDatabase.findOne({channelId: '8808'});
         // 从公共频道删除
-        await CommonUtil.updateChatChannel(channel, user, 'del').then((personnel: string | boolean) => {
-            if (personnel) channel.update({personnel}, {where: {channelId: '8808'}});
+        await CommonUtil.updateChatChannel(channel, user, 'del').then(async (personnel: string | boolean) => {
+            if (personnel) {
+                await ChatChannelDatabase.updateOne({channelId: '8808'}, {personnel});
+            }
         }).catch((e: any) => {
             console.log(e);
         });
@@ -346,7 +366,7 @@ const uploadAvatar = async (req: Request, res: Response) => {
     if (req.file) {
         // 用户ID
         const id = req.header('userId') as string;
-        const user: any = await User.findOne({where: {id}});
+        const user: any = await User.findOne({id});
         if (!user) {
             return res.json({
                 code: ResultCodeEnum.fail,
@@ -362,7 +382,7 @@ const uploadAvatar = async (req: Request, res: Response) => {
         // console.log(pathUrl);
         // console.log(path + req.file?.originalname);
         // 从公共频道删除
-        const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+        const channel: any = await ChatChannelDatabase.findOne({channelId: '8808'});
         const personnel: any[] = JSON.parse(channel.personnel);
         // 找到索引
         const findIndex: number | undefined = personnel.findIndex(item => item.id === +id);
@@ -373,24 +393,22 @@ const uploadAvatar = async (req: Request, res: Response) => {
                 avatar: `${path}/${req.file?.originalname}`, // 头像
             };
             // 更新
-            await channel.update(
+            await ChatChannelDatabase.updateOne(
+                {channelId: '8808'},
                 {
                     personnel: JSON.stringify(personnel),
-                },
-                {
-                    where: {channelId: '8808'},
                 }
             );
             // 通知房间更新用户信息
             await updateUserInfo(id, `${path}/${req.file?.originalname}`);
         }
         // 保存新头像
-        await user.update(
-            {
-                avatar: `${path}/${req.file?.originalname}`,
-            },
-            {
-                where: {id: user.id},
+        await User.updateOne(
+            {id: user.id},
+            {avatar: `${path}/${req.file?.originalname}`},
+            function (err, res) {
+                if (err) throw err;
+                console.log(res);
             }
         );
         res.json({
@@ -419,7 +437,7 @@ const updateUser = async (req: Request, res: Response) => {
             msg: '参数错误',
         });
     }
-    const user: any = await User.findOne({where: {id}});
+    const user: any = await User.findOne({id});
     const userId = req.header('userId');
     if (userId != user.id) {
         return res.json({
@@ -434,14 +452,14 @@ const updateUser = async (req: Request, res: Response) => {
         });
     }
     // 验证是否存在相同用户昵称
-    const usernameRepeat: any = await User.findOne({where: {username: userName}});
+    const usernameRepeat: any = await User.findOne({username: userName});
     if (usernameRepeat && usernameRepeat.id !== id) {
         return res.json({
             code: ResultCodeEnum.fail,
             msg: `昵称已存在`,
         });
     }
-    const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+    const channel: any = await ChatChannelDatabase.findOne({channelId: '8808'});
     const personnel: any[] = JSON.parse(channel.personnel);
     // 找到索引
     const findIndex: number | undefined = personnel.findIndex(item => item.id === id);
@@ -455,12 +473,10 @@ const updateUser = async (req: Request, res: Response) => {
             userName: userName, // 昵称
         };
         // 更新
-        await channel.update(
+        await ChatChannelDatabase.updateOne(
+            {channelId: '8808'},
             {
                 personnel: JSON.stringify(personnel),
-            },
-            {
-                where: {channelId: '8808'},
             }
         );
     }
@@ -469,7 +485,8 @@ const updateUser = async (req: Request, res: Response) => {
     if (password) {
         const aesPassword = encipher(password);
         // 更新
-        await user.update(
+        await User.updateOne(
+            {id: user.id},
             {
                 avatar, // 头像
                 remarks, // 备注
@@ -477,21 +494,24 @@ const updateUser = async (req: Request, res: Response) => {
                 username: userName, // 昵称
                 password: aesPassword, // 密码
             },
-            {
-                where: {id: user.id},
+            function (err, res) {
+                if (err) throw err;
+                console.log(res);
             }
         );
     } else {
         // 更新
-        await user.update(
+        await User.updateOne(
+            {id: user.id},
             {
                 avatar, // 头像
                 remarks, // 备注
                 email, // 邮箱
                 username: userName, // 昵称
             },
-            {
-                where: {id: user.id},
+            function (err, res) {
+                if (err) throw err;
+                console.log(res);
             }
         );
     }

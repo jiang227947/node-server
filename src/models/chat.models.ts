@@ -1,83 +1,83 @@
-import sequelize from '../db/connection';
-import {DataTypes} from 'sequelize';
+import mongoose from "mongoose";
 
 /**
  * 聊天记录保存模型定义
  */
-const ChatDatabase = sequelize.define('chat', {
+const ChatSchema = new mongoose.Schema({
     id: {
-        // 数据类型
-        type: DataTypes.INTEGER,
-        // 是否为key
-        primaryKey: true,
-        // 自动递增
-        autoIncrement: true,
+        type: String,
+        required: true,
+        unique: true,
     },
     // 附件
     attachments: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 作者
     author: {
-        type: DataTypes.STRING,
+        type: Object,
     },
     // 频道id
     channelId: {
-        type: DataTypes.STRING,
-        allowNull: false
+        type: String,
     },
-    // 频道id
+    // 组件
     components: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 消息内容
     content: {
-        type: DataTypes.TEXT,
+        type: String,
+        unique: true
     },
     // 编辑消息的时间
     editedTimestamp: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 反应
     reaction: {
-        type: DataTypes.STRING,
+        type: Object,
     },
     // 标志
     flags: {
-        type: DataTypes.INTEGER,
+        type: String,
     },
     // 提及的人
     mentionEveryone: {
-        type: DataTypes.BOOLEAN,
+        type: String,
     },
     // 提及的人名称信息
     mentions: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 留言参考
     messageReference: {
-        type: DataTypes.STRING,
+        type: Object,
     },
     // 参考消息
     referencedMessage: {
-        type: DataTypes.STRING,
+        type: String,
     },
-    // 固定
+    // 固定/置顶
     pinned: {
-        type: DataTypes.BOOLEAN,
+        type: Boolean,
     },
     // 时间
     timestamp: {
-        type: DataTypes.STRING,
+        type: String,
     },
     // 文本转语音
     tts: {
-        type: DataTypes.BOOLEAN,
+        type: Boolean,
     },
     // 消息类型 用于前端展示判断
     type: {
-        type: DataTypes.INTEGER,
+        type: Number,
+    },
+    // 创建时间
+    created: {
+        type: String,
     },
 });
-
+const ChatDatabase = mongoose.model('chat', ChatSchema);
 export default ChatDatabase;

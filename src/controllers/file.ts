@@ -4,6 +4,10 @@ import multer from 'multer';
 import Filedb from '../models/file.models';
 import {ResultListPage} from '../models/class/ResultList';
 import {ResultCodeEnum} from "../enum/http.enum";
+import {v4 as uuidv4} from "uuid";
+import User from "../models/user.models";
+import {UserInterface} from "../interface/user";
+import moment from "moment/moment";
 
 
 /**
@@ -15,7 +19,7 @@ const allFiles = async (req: Request, res: Response) => {
     const {pageNum, pageSize} = req.body;
     const begin = (pageNum - 1) * pageSize;
     // 查询所有文件的数量
-    const fileCount = await Filedb.count();
+    const fileCount = await Filedb.find({}).count();
     let totalPage: number;
     // 获取总分页数量
     if (pageSize === 0) {
@@ -24,11 +28,16 @@ const allFiles = async (req: Request, res: Response) => {
         totalPage = Math.trunc(fileCount % pageSize === 0 ? fileCount / pageSize : fileCount / pageSize + 1);
     }
     // 跳过offset个实例,然后获取limit个实例
-    const allFileList = await Filedb.findAll({offset: begin, limit: pageSize});
+    const fileList: any[] = await Filedb.find({}).skip(begin).limit(pageSize);
+    const filePageList = fileList.map(item => {
+        item.created = moment(item.created, 'DD/MM/YYYY HH:mm:ss');
+        item.updated = moment(item.updated, 'DD/MM/YYYY HH:mm:ss');
+        return item;
+    });
     const data = new ResultListPage(
         200,
         '查询成功',
-        allFileList,
+        filePageList,
         pageNum,
         pageSize,
         fileCount,
@@ -71,8 +80,17 @@ const upload = async (req: Request | any, res: Response) => {
     // multer还会把本次表单提交的文本字段(如果有)解析为对象存入req.body中
     // console.log('单个文件：', req.file);
     // console.log('多个文件：', req.files);
+    // 用户ID
+    const userId = req.header('userId') as string;
+    const user: UserInterface | null = await User.findOne({id: userId});
+    if (!user) {
+        return res.status(400).json({
+            code: ResultCodeEnum.fail,
+            msg: '参数异常',
+        });
+    }
     if (req.file) {
-        const file: any = await Filedb.findOne({where: {filename: req.file.filename}});
+        const file: any = await Filedb.findOne({filename: req.file.filename});
         // 判断是否存在
         if (file && file.filesize === req.file.size) {
             return res.json({
@@ -82,11 +100,17 @@ const upload = async (req: Request | any, res: Response) => {
         }
         const pathUrl = `${req.file?.destination}/${req.file?.originalname}`; // 指定文件路径和文件名
         // 成功保存文件
-        await Filedb.create({
+        const newFile = new Filedb({
+            id: uuidv4(),
             filename: req.file?.originalname,
             filesize: req.file?.size,
             path: pathUrl,
+            uploadUser: user.userName,
+            uploadUserId: user.id,
+            created: new Date().getTime()
         });
+        // 保存
+        await newFile.save();
         res.status(200).json({
             code: ResultCodeEnum.success,
             msg: `上传成功`,
@@ -105,6 +129,17 @@ const upload = async (req: Request | any, res: Response) => {
             filesize: req.files?.size,
             path: JSON.stringify(filesPathUrl),
         });
+        const newFile = new Filedb({
+            id: uuidv4(),
+            filename: JSON.stringify(filesName),
+            filesize: req.files?.size,
+            path: JSON.stringify(filesPathUrl),
+            uploadUser: user.userName,
+            uploadUserId: user.id,
+            created: new Date().getTime()
+        });
+        // 保存
+        await newFile.save();
         res.status(200).json({
             code: ResultCodeEnum.success,
             msg: `上传成功`,
@@ -124,7 +159,7 @@ const upload = async (req: Request | any, res: Response) => {
  */
 const download = async (req: Request, res: Response) => {
     const {filename} = req.body;
-    const file: any = await Filedb.findOne({where: {filename}});
+    const file: any = await Filedb.findOne({filename});
     if (!file) {
         return res.json({
             code: ResultCodeEnum.fail,
@@ -132,11 +167,12 @@ const download = async (req: Request, res: Response) => {
         });
     }
     // 更新下载次数
-    await file.update(
-        {
-            downloadCount: file.downloadCount + 1
-        }, {
-            where: {id: file.id}
+    await Filedb.updateOne(
+        {id: file.id},
+        {downloadCount: file.downloadCount + 1},
+        function (err, res) {
+            if (err) throw err;
+            console.log(res);
         });
     res.download(file.path);
 };
@@ -148,7 +184,7 @@ const download = async (req: Request, res: Response) => {
  */
 const deleteFile = async (req: Request, res: Response) => {
     const {id} = req.body;
-    const file: any = await Filedb.findOne({where: {id}});
+    const file: any = await Filedb.findOne({id});
     if (!file) {
         return res.json({
             code: ResultCodeEnum.fail,
@@ -160,7 +196,7 @@ const deleteFile = async (req: Request, res: Response) => {
             console.log(err);
         });
         // 成功删除
-        await file.destroy();
+        await Filedb.deleteOne({id});
         res.json({
             code: ResultCodeEnum.success,
             msg: `文件删除成功`,

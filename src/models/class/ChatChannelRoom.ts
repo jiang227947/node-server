@@ -44,7 +44,7 @@ export class ChatChannelRoom {
                 }
             }
             // 查询频道
-            const channel: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+            const channel: any = await ChatChannelDatabase.findOne({channelId: '8808'});
             // 频道人员
             const channelPersonnel: ChatChannelRoomUserInterface[] = JSON.parse(channel.personnel);
             // 如果上面的循环走完还没有加入频道 则进入公共闲聊频道
@@ -58,13 +58,11 @@ export class ChatChannelRoom {
                     userInfo.socketId = '';
                     const personnel = [...channelPersonnel, userInfo];
                     // 更新频道用户
-                    await channel.update(
+                    await ChatChannelDatabase.updateOne(
+                        {channelId: '8808'},
                         {
                             personnel: JSON.stringify(personnel),
                         },
-                        {
-                            where: {channelId: '8808'},
-                        }
                     );
                 }
                 // 补充socketId
@@ -118,7 +116,7 @@ export class ChatChannelRoom {
             return this.roomsState[findIndex];
         } else {
             // 查询频道
-            const channel: any = await ChatChannelDatabase.findOne({where: {channelId}});
+            const channel: any = await ChatChannelDatabase.findOne({channelId});
             // 判断是否存在该频道
             if (channel) {
                 const room: ChatChannelRoomInterface = {

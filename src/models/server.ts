@@ -9,11 +9,6 @@ import ChatMessageRouter from '../routes/chat.router';
 import Oauth2Router from '../routes/oauth2.router';
 import ChatChannelRouter from '../routes/chat-channel.router';
 // Models
-import Filedb from './file.models';
-import LeaveMessage from './leave-message.models';
-import Visitor from './visitor.models';
-import ChatDatabase from './chat.models';
-import ChatChannelDatabase from './chat-channel.models';
 import {Redis} from "../db/redis";
 import mongoose from "mongoose";
 import {connectMongoDb} from "../db/mongoose";
@@ -50,8 +45,7 @@ class Servers {
             });
             // 连接Redis和创建数据库
             const redis = new Redis().connect();
-            const dbConnect = this.dbConnect();
-            Promise.all([connect, redis, dbConnect]).then(() => {
+            Promise.all([connect, redis]).then(() => {
                 // console.log('success:', results);
             }).catch(e => {
                 // 失败的时候则返回最先被reject失败状态的值
@@ -119,31 +113,6 @@ class Servers {
         this.app.use('/data/avatar', express.static('/data/avatar'));
         // 附件文件静态资源托管
         this.app.use('/data/channel/attachments', express.static('/data/channel/attachments'));
-    }
-
-    /**
-     * 数据库连接
-     */
-    async dbConnect(): Promise<void> {
-        try {
-            // 测试连接
-            // await sequelize.authenticate();
-            // 如果表不存在,则创建该表(如果已经存在,则不执行任何操作)
-            // 用户表
-            // await User.sync();
-            // 文件路径表
-            await Filedb.sync();
-            // 登录页留言框表
-            await LeaveMessage.sync();
-            // 访问表
-            await Visitor.sync();
-            // 聊天记录表
-            await ChatDatabase.sync();
-            // 聊天频道
-            await ChatChannelDatabase.sync();
-        } catch (error) {
-            console.log('数据库连接失败', error);
-        }
     }
 }
 

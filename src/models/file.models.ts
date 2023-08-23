@@ -1,36 +1,53 @@
-import sequelize from '../db/connection';
-import { DataTypes } from 'sequelize';
+import mongoose from "mongoose";
 
 /**
  * 文件模型定义
  */
-const Filedb = sequelize.define('file', {
+
+const fileSchema = new mongoose.Schema({
   id: {
-    // 数据类型
-    type: DataTypes.INTEGER,
-    // 是否为key
-    primaryKey: true,
-    // 自动递增
-    autoIncrement: true,
+    type: String,
+    required: true,
+    unique: true,
   },
+  // 文件名
   filename: {
-    type: DataTypes.STRING,
+    type: String,
+    required: true,
     unique: true,
-    allowNull: false,
   },
+  // 文件大小（字节）
   filesize: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
+    type: Number,
+    required: true,
   },
+  // 下载次数
   downloadCount: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
+    type: Number,
   },
+  // 文件路径
   path: {
-    type: DataTypes.STRING,
-    unique: true,
-    allowNull: false,
+    type: String,
+    required: true,
+  },
+  // 上传用户
+  uploadUser: {
+    type: String,
+    required: true
+  },
+  // 上传用户id
+  uploadUserId: {
+    type: String,
+    required: true
+  },
+  // 创建时间
+  created: {
+    type: String,
+  },
+  // 修改时间
+  updated: {
+    type: String,
   },
 });
-
+const Filedb = mongoose.model('file', fileSchema);
 export default Filedb;
