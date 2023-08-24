@@ -17,6 +17,7 @@ import User from '../models/user.models';
 const queryChatMessage = async (req: Request, res: Response) => {
     try {
         const {channelId, pageNum, pageSize} = req.body;
+        console.log(channelId, pageNum, pageSize);
         // const begin = (pageNum - 1) * pageSize;
         // console.log('begin', begin);
         // 查询所有聊天消息的数量
@@ -160,7 +161,7 @@ const uploadChannelAvatar = async (req: Request, res: Response) => {
                 await ChatChannelDatabase.updateOne(
                     {id},
                     {avatar: `${path}/${req.file?.originalname}`},
-                    function (err, res) {
+                    function (err: any, res: any) {
                         if (err) throw err;
                         console.log(res);
                     }
@@ -268,36 +269,55 @@ const createChannel = async (req: Request, res: Response) => {
  * @param res
  */
 const queryChannel = async (req: Request, res: Response) => {
-    const {id} = req.query;
-    const regExp = new RegExp('"id":' + id);
-    const channel: any = await ChatChannelDatabase.find().regex('personnel', regExp);
-    // 更新数据用的
-    /*const channelAll: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
-    let channelAllPersonnel: ChatChannelRoomUserInterface[] = JSON.parse(channelAll.personnel);
-    for (let i = 0; i < channelAllPersonnel.length; i++) {
-        const user: any = await User.findOne({where: {id: channelAllPersonnel[i].id}});
-        channelAllPersonnel[i].name = user.name;
-        channelAllPersonnel[i].createdAt = user.createdAt;
-    }
-    console.log(channelAllPersonnel);
-    channelAll.update({personnel: JSON.stringify(channelAllPersonnel)}, {where: {channelId: '8808'}});*/
-    // 格式转换
-    const result = channel.map((item: any) => {
-        // 管理员格式转换
-        item.admins = JSON.parse(item.admins);
-        // 频道人员格式转换
-        item.personnel = JSON.parse(item.admins);
-        // 密码删除
-        item.password = null;
-        return item;
-    });
-    // 返回结构
-    res.json({
-        code: ResultCodeEnum.success,
-        msg: '查询成功',
-        data: result
-    });
     try {
+        const {id} = req.query;
+        const regExp = new RegExp('"id":' + id + '|' + '"id":' + `"${id}"`);
+        const channel: any[] = await ChatChannelDatabase.find().regex('personnel', regExp);
+        // 更新数据用的
+        /*const channelAll: any = await ChatChannelDatabase.findOne({where: {channelId: '8808'}});
+        let channelAllPersonnel: ChatChannelRoomUserInterface[] = JSON.parse(channelAll.personnel);
+        for (let i = 0; i < channelAllPersonnel.length; i++) {
+            const user: any = await User.findOne({where: {id: channelAllPersonnel[i].id}});
+            channelAllPersonnel[i].name = user.name;
+            channelAllPersonnel[i].createdAt = user.createdAt;
+        }
+        console.log(channelAllPersonnel);
+        channelAll.update({personnel: JSON.stringify(channelAllPersonnel)}, {where: {channelId: '8808'}});*/
+        const result = [];
+        const getResult = async () => {
+            // 格式转换
+            for (let i = 0; i < channel.length; i++) {
+                const getLastMessage = () => {
+                    return new Promise((resolve) => {
+                        const lastMessage = ChatDatabase.findOne({channelId: channel[i].channelId}).sort({_id: -1}).limit(1);
+                        resolve(lastMessage);
+                    });
+                }
+                await getLastMessage().then((res: any) => {
+                    // 管理员格式转换
+                    channel[i].admins = JSON.parse(channel[i].admins);
+                    // 频道人员屏蔽
+                    channel[i].personnel = null;
+                    // 密码删除屏蔽
+                    channel[i].password = null;
+                    // 最后一条消息发送人
+                    channel[i].lastMessageUser = JSON.parse(res.author).userName;
+                    // 最后一条消息
+                    channel[i].lastMessage = res.content;
+                    // 最后一条消息时间
+                    channel[i].lastMessageTime = res.timestamp;
+                    result.push(channel[i]);
+                });
+            }
+        }
+        await getResult().then(() => {
+            // 返回结构
+            res.json({
+                code: ResultCodeEnum.success,
+                msg: '查询成功',
+                data: result
+            });
+        })
     } catch (e) {
         // 返回结构
         res.json({

@@ -31,7 +31,7 @@ const ChatChannelSchema = new mongoose.Schema({
     },
     // 管理员
     admins: {
-        type: String,
+        type: Object,
     },
     // 频道人员
     personnel: {
@@ -51,6 +51,18 @@ const ChatChannelSchema = new mongoose.Schema({
     },
     // 备注
     remark: {
+        type: String,
+    },
+    // 最后一条消息发送人
+    lastMessageUser: {
+        type: String,
+    },
+    // 最后一条消息
+    lastMessage: {
+        type: String,
+    },
+    // 最后一条消息时间
+    lastMessageTime: {
         type: String,
     },
     // 创建时间

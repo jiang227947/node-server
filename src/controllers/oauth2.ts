@@ -220,7 +220,7 @@ const githubAccessToken = async (req: Request, res: Response) => {
                 await User.updateOne(
                     {id: user.id},
                     {lastLoginTime: new Date().getTime()},
-                    function (err, res) {
+                    function (err: any, res: any) {
                         if (err) throw err;
                         console.log(res);
                     }
@@ -375,7 +375,7 @@ const qqOauth = async (req: Request, res: Response) => {
                             await ChatChannelDatabase.updateOne(
                                 {channelId: '8808'},
                                 {personnel},
-                                function (err, res) {
+                                function (err: any, res: any) {
                                     if (err) throw err;
                                     console.log(res);
                                 }
@@ -419,7 +419,7 @@ const qqOauth = async (req: Request, res: Response) => {
                     await User.updateOne(
                         {id: user.id},
                         {lastLoginTime: new Date().getTime()},
-                        function (err, res) {
+                        function (err: any, res: any) {
                             if (err) throw err;
                             console.log(res);
                         }
@@ -467,7 +467,7 @@ const qqOauth = async (req: Request, res: Response) => {
                 await User.updateOne(
                     {id: user.id},
                     {lastLoginTime: new Date().getTime()},
-                    function (err, res) {
+                    function (err: any, res: any) {
                         if (err) throw err;
                         console.log(res);
                     }
@@ -647,8 +647,8 @@ const wxCodeSession = (code: string) => {
     return new Promise((resolve, reject) => {
         axios.get(`https://api.weixin.qq.com/sns/jscode2session`, {
             params: {
-                appid: 'wx6008b4b874bca0d7',
-                secret: 'c0b8dbbd0ce2c91c2c9fc53f50656644',
+                appid: '',
+                secret: '',
                 js_code: code,
                 grant_type: 'authorization_code',
             }

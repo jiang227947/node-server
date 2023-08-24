@@ -170,7 +170,7 @@ const download = async (req: Request, res: Response) => {
     await Filedb.updateOne(
         {id: file.id},
         {downloadCount: file.downloadCount + 1},
-        function (err, res) {
+        function (err: any, res: any) {
             if (err) throw err;
             console.log(res);
         });

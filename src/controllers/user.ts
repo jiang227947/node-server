@@ -218,7 +218,7 @@ const loginUser = async (req: Request, res: Response) => {
     await User.updateOne(
         {id: user.id},
         {lastLoginTime: new Date().getTime()},
-        function (err, res) {
+        function (err: any, res: any) {
             if (err) throw err;
             console.log(res);
         }
@@ -406,7 +406,7 @@ const uploadAvatar = async (req: Request, res: Response) => {
         await User.updateOne(
             {id: user.id},
             {avatar: `${path}/${req.file?.originalname}`},
-            function (err, res) {
+            function (err: any, res: any) {
                 if (err) throw err;
                 console.log(res);
             }
@@ -494,7 +494,7 @@ const updateUser = async (req: Request, res: Response) => {
                 username: userName, // 昵称
                 password: aesPassword, // 密码
             },
-            function (err, res) {
+            function (err: any, res: any) {
                 if (err) throw err;
                 console.log(res);
             }
@@ -509,7 +509,7 @@ const updateUser = async (req: Request, res: Response) => {
                 email, // 邮箱
                 username: userName, // 昵称
             },
-            function (err, res) {
+            function (err: any, res: any) {
                 if (err) throw err;
                 console.log(res);
             }

@@ -15,7 +15,7 @@ const visitor = async (req: Request, res: Response) => {
         await Visitor.updateOne(
             {id: visitorUser.id},
             {accessTime: new Date().getTime()},
-            function (err, res) {
+            function (err: any, res: any) {
                 if (err) throw err;
                 console.log(res);
             }

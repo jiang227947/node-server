@@ -4,6 +4,7 @@
 import {Request, Response, NextFunction} from 'express';
 import jwt from 'jsonwebtoken';
 import {decipher} from "../util/encipher";
+import {ResultCodeEnum} from "../enum/http.enum";
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
     const headerToken = req.headers['authorization'];
@@ -20,11 +21,13 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
             next();
         } catch (error) {
             return res.status(401).json({
+                code: ResultCodeEnum.fail,
                 msg: 'token不合法',
             });
         }
     } else {
         return res.status(401).json({
+            code: ResultCodeEnum.fail,
             msg: '无权限访问',
         });
     }
