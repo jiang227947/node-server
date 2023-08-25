@@ -283,7 +283,7 @@ const queryChannel = async (req: Request, res: Response) => {
         }
         console.log(channelAllPersonnel);
         channelAll.update({personnel: JSON.stringify(channelAllPersonnel)}, {where: {channelId: '8808'}});*/
-        const result = [];
+        const result: any[] = [];
         const getResult = async () => {
             // 格式转换
             for (let i = 0; i < channel.length; i++) {
